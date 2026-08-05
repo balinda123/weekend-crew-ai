@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>猫咪形象挑选 · 馋猫局儿</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-linen: #F5F3EF;
+        --bg-card: #FFFFFF;
+        --bg-soft: #F7F5F1;
+        --clay: #D4674A;
+        --clay-deep: #B04E35;
+        --clay-light: #F0C0AE;
+        --clay-soft: #FBE5DB;
+        --teal: #5B9EA8;
+        --teal-deep: #3E7E88;
+        --mauve: #C68B96;
+        --mauve-soft: #FAE8EB;
+        --ochre: #E8A838;
+        --accent: #FF7A5C;
+        --accent-deep: #E55A3C;
+        --ink: #2D2A26;
+        --ink-soft: #6B6660;
+        --ink-faint: #ACA69E;
+        --border: #E5E0D8;
+        --shadow-sm: 0 1px 3px rgba(45, 42, 38, 0.05);
+        --shadow-md: 0 4px 12px rgba(45, 42, 38, 0.07);
+        --font-display: 'Noto Serif SC', 'Noto Sans SC', serif;
+        --font-body: 'Noto Sans SC', -apple-system, sans-serif;
+      }
+      * { margin:0; padding:0; box-sizing:border-box; }
+      body {
+        font-family: var(--font-body);
+        color: var(--ink);
+        background: var(--bg-linen);
+        background-image:
+          radial-gradient(circle at 20% 20%, rgba(184,146,58,.06) 0%, transparent 40%),
+          radial-gradient(circle at 80% 70%, rgba(155,123,126,.06) 0%, transparent 40%);
+        min-height: 100vh;
+        padding: 32px 20px 60px;
+      }
+      .picker-wrap { max-width: 920px; margin: 0 auto; }
+      .picker-header {
+        text-align: center;
+        margin-bottom: 28px;
+      }
+      .picker-header h1 {
+        font-family: var(--font-display);
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--ink);
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+      .picker-header p {
+        font-size: 13px;
+        color: var(--ink-soft);
+      }
+      .char-block {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 24px;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 24px;
+      }
+      .char-block-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px dashed var(--border);
+      }
+      .char-tag {
+        font-family: var(--font-display);
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+        padding: 6px 16px;
+        border-radius: 999px;
+      }
+      .char-tag.cheese { background: var(--teal); }
+      .char-tag.milk { background: var(--mauve); }
+      .char-desc {
+        font-size: 12px;
+        color: var(--ink-soft);
+        line-height: 1.5;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 16px;
+      }
+      .cat-card {
+        background: var(--bg-soft);
+        border: 2px solid transparent;
+        border-radius: 18px;
+        padding: 12px;
+        cursor: pointer;
+        transition: border-color .2s, box-shadow .2s, transform .2s;
+        text-align: center;
+      }
+      .cat-card:hover {
+        border-color: var(--clay-light);
+        box-shadow: var(--shadow-md);
+        transform: translateY(-2px);
+      }
+      .cat-card.selected {
+        border-color: var(--clay);
+        box-shadow: 0 0 0 4px var(--clay-soft);
+      }
+      .cat-card img {
+        width: 100%;
+        aspect-ratio: 1;
+        object-fit: cover;
+        border-radius: 12px;
+        background: #fff;
+        margin-bottom: 8px;
+      }
+      .cat-card-label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+      .cat-card-sub {
+        font-size: 10px;
+        color: var(--ink-faint);
+        margin-top: 2px;
+      }
+      .picker-tip {
+        text-align: center;
+        font-size: 12px;
+        color: var(--ink-faint);
+        margin-top: 8px;
+      }
+      .picker-actions {
+        text-align: center;
+        margin-top: 20px;
+      }
+      .btn-back-app {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--clay);
+        color: #fff;
+        padding: 12px 28px;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 14px;
+        text-decoration: none;
+        box-shadow: var(--shadow-md);
+        transition: box-shadow .2s;
+      }
+      .btn-back-app:hover { box-shadow: 0 6px 20px rgba(255, 122, 92, 0.35); }
+      .section-label {
+        font-size: 11px;
+        color: var(--ink-faint);
+        font-weight: 700;
+        letter-spacing: .5px;
+        text-transform: uppercase;
+        margin: 14px 0 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="picker-wrap">
+      <header class="picker-header">
+        <h1>猫咪形象挑选</h1>
+        <p>芝士与奶糖的多版本形象，点击卡片即可标记你的偏好，告诉我要用哪一版</p>
+      </header>
+
+      <!-- 芝士 Cheese -->
+      <section class="char-block">
+        <div class="char-block-head">
+          <span class="char-tag cheese">芝士</span>
+          <p class="char-desc">胖乎乎的白色公猫，戴蓝色围巾，挎着小包。<br>路线小能手，负责排吃逛行程。</p>
+        </div>
+
+        <div class="section-label">蓝眼简笔画版（当前使用）</div>
+        <div class="grid">
+          <div class="cat-card is-selected" data-name="cheese-cat"><img src="./assets/cheese-cat.jpg" alt="芝士 合并版"><div class="cat-card-label">合并版 · 已采用</div><div class="cat-card-sub">版2身形+版3头部 · 蓝眼</div></div>
+          <div class="cat-card" data-name="cheese-blue-v3"><img src="./assets/cheese-blue-v3.jpg" alt="芝士 头部特写"><div class="cat-card-label">头部特写</div><div class="cat-card-sub">大蓝眼焦点 · 简笔画</div></div>
+        </div>
+
+        <div class="section-label">早期版本</div>
+        <div class="grid">
+          <div class="cat-card" data-name="cheese-min1"><img src="./assets/cheese-min1.jpg" alt="芝士 简约版1"><div class="cat-card-label">简约版 1</div><div class="cat-card-sub">扁平几何 · 双色</div></div>
+          <div class="cat-card" data-name="cheese-min2"><img src="./assets/cheese-min2.jpg" alt="芝士 简约版2"><div class="cat-card-label">简约版 2</div><div class="cat-card-sub">色块拼接 · 无描边</div></div>
+          <div class="cat-card" data-name="cheese-min3"><img src="./assets/cheese-min3.jpg" alt="芝士 简约版3"><div class="cat-card-label">简约版 3</div><div class="cat-card-sub">挎包造型 · 三色</div></div>
+          <div class="cat-card" data-name="cheese-v1"><img src="./assets/cheese-v1.jpg" alt="芝士 v1"><div class="cat-card-label">版本 1</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="cheese-v2"><img src="./assets/cheese-v2.jpg" alt="芝士 v2"><div class="cat-card-label">版本 2</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="cheese-v3"><img src="./assets/cheese-v3.jpg" alt="芝士 v3"><div class="cat-card-label">版本 3</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="cheese-v4"><img src="./assets/cheese-v4.jpg" alt="芝士 v4"><div class="cat-card-label">版本 4</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="cheese-v5"><img src="./assets/cheese-v5.jpg" alt="芝士 v5"><div class="cat-card-label">版本 5</div><div class="cat-card-sub">早期简约</div></div>
+        </div>
+      </section>
+
+      <!-- 奶糖 MilkSugar -->
+      <section class="char-block">
+        <div class="char-block-head">
+          <span class="char-tag milk">奶糖</span>
+          <p class="char-desc">纤细的白色小母猫，戴粉色蝴蝶结。<br>精算小管家，负责 AA 记账与结算。</p>
+        </div>
+
+        <div class="section-label">蓝眼简笔画版（当前使用）</div>
+        <div class="grid">
+          <div class="cat-card is-selected" data-name="milksugar-cat"><img src="./assets/milksugar-cat.jpg" alt="奶糖 合并版"><div class="cat-card-label">合并版 · 已采用</div><div class="cat-card-sub">版2身形+版3头部 · 蓝眼</div></div>
+          <div class="cat-card" data-name="milksugar-blue-v3"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖 头部特写"><div class="cat-card-label">头部特写</div><div class="cat-card-sub">大蓝眼焦点 · 简笔画</div></div>
+        </div>
+
+        <div class="section-label">早期版本</div>
+        <div class="grid">
+          <div class="cat-card" data-name="milksugar-min1"><img src="./assets/milksugar-min1.jpg" alt="奶糖 简约版1"><div class="cat-card-label">简约版 1</div><div class="cat-card-sub">扁平几何 · 双色</div></div>
+          <div class="cat-card" data-name="milksugar-min2"><img src="./assets/milksugar-min2.jpg" alt="奶糖 简约版2"><div class="cat-card-label">简约版 2</div><div class="cat-card-sub">色块拼接 · 无描边</div></div>
+          <div class="cat-card" data-name="milksugar-min3"><img src="./assets/milksugar-min3.jpg" alt="奶糖 简约版3"><div class="cat-card-label">简约版 3</div><div class="cat-card-sub">零钱包造型 · 三色</div></div>
+          <div class="cat-card" data-name="milksugar-v1"><img src="./assets/milksugar-v1.jpg" alt="奶糖 v1"><div class="cat-card-label">版本 1</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="milksugar-v2"><img src="./assets/milksugar-v2.jpg" alt="奶糖 v2"><div class="cat-card-label">版本 2</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="milksugar-v3"><img src="./assets/milksugar-v3.jpg" alt="奶糖 v3"><div class="cat-card-label">版本 3</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="milksugar-v4"><img src="./assets/milksugar-v4.jpg" alt="奶糖 v4"><div class="cat-card-label">版本 4</div><div class="cat-card-sub">早期简约</div></div>
+          <div class="cat-card" data-name="milksugar-v5"><img src="./assets/milksugar-v5.jpg" alt="奶糖 v5"><div class="cat-card-label">版本 5</div><div class="cat-card-sub">早期简约</div></div>
+        </div>
+      </section>
+
+      <p class="picker-tip">挑好后，告诉我「芝士用 X 版、奶糖用 Y 版」，我会替换原型里全部出现的位置。</p>
+      <div class="picker-actions">
+        <a class="btn-back-app" href="./index.html">返回原型</a>
+      </div>
+    </div>
+
+    <script>
+      // 点击高亮选择，并在标题下显示当前选择
+      const picks = { cheese: null, milk: null };
+      document.querySelectorAll('.cat-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const block = card.closest('.char-block');
+          const isCheese = block.querySelector('.char-tag').classList.contains('cheese');
+          const key = isCheese ? 'cheese' : 'milk';
+          // 同区块内取消其它选中
+          block.querySelectorAll('.cat-card').forEach(c => c.classList.remove('selected'));
+          card.classList.add('selected');
+          picks[key] = card.dataset.name;
+        });
+      });
+    </script>
+  </body>
+</html>

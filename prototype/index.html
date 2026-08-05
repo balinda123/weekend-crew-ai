@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#FFF8F0">
+    <title>馋猫局儿 · AI 组局微信小程序</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <!-- Decorative Background Paw Prints -->
+    <div class="bg-decor" aria-hidden="true">
+      <svg class="paw-bg paw-1" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z"/></svg>
+      <svg class="paw-bg paw-2" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z"/></svg>
+      <svg class="paw-bg paw-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z"/></svg>
+    </div>
+
+    <main class="shell">
+      <div class="phone-wrapper">
+        <!-- Phone Status Bar -->
+        <div class="status-bar">
+          <span class="status-time">09:41</span>
+          <div class="status-icons">
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M1 7h2v2H1V7zm4-2h2v4H5V5zm4-2h2v6H9V3zm4-2h2v8h-2V1z" fill="currentColor"/></svg>
+            <svg width="14" height="10" viewBox="0 0 14 10" fill="none"><path d="M7 2.5C4.8 2.5 2.7 3.3 1 4.8l1 1c1.4-1.3 3.2-2 5-2s3.6.7 5 2l1-1C11.3 3.3 9.2 2.5 7 2.5zm0 3c-1.3 0-2.6.5-3.5 1.4l1 1c.7-.6 1.6-1 2.5-1s1.8.4 2.5 1l1-1C9.6 6 8.3 5.5 7 5.5zm0 3c-.5 0-1 .2-1.4.6L7 10.5l1.4-1.4C8 8.2 7.5 8 7 8z" fill="currentColor"/></svg>
+            <svg width="20" height="10" viewBox="0 0 20 10" fill="none"><rect x="1" y="2" width="16" height="6" rx="1.5" stroke="currentColor" stroke-width="1" fill="none"/><rect x="3" y="4" width="13" height="2" rx="0.5" fill="currentColor"/><rect x="18" y="4" width="1.5" height="2" rx="0.5" fill="currentColor"/></svg>
+          </div>
+        </div>
+
+        <!-- Pages Container -->
+        <div class="pages-viewport" id="pagesViewport">
+
+          <!-- ================= PAGE 1: 首页 / 我的局 (Home) ================= -->
+          <div class="mp-page is-active" id="page-home" data-page="home">
+            <header class="mp-header">
+              <div class="mp-title">
+                <svg class="paw-logo" viewBox="0 0 24 24" fill="none"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z" fill="currentColor"/></svg>
+                <span class="header-title-text">馋猫局儿</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="page-content home-content">
+              <!-- Welcome card with cat mascots -->
+              <section class="welcome-card">
+                <div class="welcome-bg-deco" aria-hidden="true"></div>
+                <div class="welcome-text">
+                  <h3>嗨，张三！</h3>
+                  <p>今天准备带朋友们去哪里吃？芝士和奶糖已就位，帮你排路线、算好账！</p>
+                </div>
+                <div class="welcome-cats">
+                  <img src="./assets/cheese-blue-v3.jpg" class="welcome-cat-img cheese-welcome" alt="芝士" title="芝士 · 路线小能手">
+                  <img src="./assets/milksugar-blue-v3.jpg" class="welcome-cat-img milk-welcome" alt="奶糖" title="奶糖 · 精算小管家">
+                </div>
+              </section>
+
+              <!-- Crews list -->
+              <section class="crew-list-section">
+                <div class="section-title-row">
+                  <h4>我的组局</h4>
+                  <span class="crew-count">2 个活跃局</span>
+                </div>
+                <div class="crew-cards" id="homeCrewCardsList">
+                  <!-- Dynamically populated -->
+                </div>
+              </section>
+
+              <!-- Create Crew Floating Action Button -->
+              <button class="btn-create-crew-float" type="button" id="openCreateCrewBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                <span>发起新的周末组局</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ================= PAGE 2: 发现 / 攻略圈 (Feed) ================= -->
+          <div class="mp-page" id="page-feed" data-page="feed">
+            <header class="mp-header">
+              <div class="mp-title">
+                <svg class="paw-logo" viewBox="0 0 24 24" fill="none"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z" fill="currentColor"/></svg>
+                <span class="header-title-text">猫猫攻略圈</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="page-content feed-content">
+              <div class="feed-intro">
+                <div class="feed-intro-icon">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-8-4.5-8-11a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6.5-8 11-8 11h-2z"/></svg>
+                </div>
+                <p>看看朋友们最近的吃逛路线，一键复刻，即刻出发！</p>
+              </div>
+              <div class="feed-list" id="feedList">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= PAGE 3: 我的 / 个人中心 (Profile) ================= -->
+          <div class="mp-page" id="page-profile" data-page="profile">
+            <header class="mp-header">
+              <div class="mp-title">
+                <svg class="paw-logo" viewBox="0 0 24 24" fill="none"><path d="M12 10c-1.7 0-3 1.3-3 3v1c0 2.2 1.3 4 3 4s3-1.8 3-4v-1c0-1.7-1.3-3-3-3zM6.5 8C5.7 8 5 8.7 5 9.5S5.7 11 6.5 11 8 10.3 8 9.5 7.3 8 6.5 8zm11 0c-.8 0-1.5.7-1.5 1.5S16.7 11 17.5 11 19 10.3 19 9.5 18.3 8 17.5 8zM9 5c-.8 0-1.5.7-1.5 1.5S8.2 8 9 8s1.5-.7 1.5-1.5S9.8 5 9 5zm6 0c-.8 0-1.5.7-1.5 1.5S14.2 8 15 8s1.5-.7 1.5-1.5S15.8 5 15 5z" fill="currentColor"/></svg>
+                <span class="header-title-text">个人中心</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="page-content profile-content">
+              <!-- User Card -->
+              <section class="user-profile-card">
+                <div class="user-avatar-lg">张</div>
+                <div class="user-info-lg">
+                  <h4>局主张三</h4>
+                  <span class="user-badge">资深吃货 · 铲屎官</span>
+                </div>
+              </section>
+
+              <!-- Statistics Grid -->
+              <section class="stats-grid">
+                <div class="stat-grid-item">
+                  <span class="stat-grid-num" id="statMyCrewsCount">3</span>
+                  <span class="stat-grid-label">发起组局</span>
+                </div>
+                <div class="stat-grid-item">
+                  <span class="stat-grid-num" id="statMyStopsCount">18</span>
+                  <span class="stat-grid-label">打卡地点</span>
+                </div>
+                <div class="stat-grid-item">
+                  <span class="stat-grid-num" id="statMySavedCount">12</span>
+                  <span class="stat-grid-label">收藏地点</span>
+                </div>
+              </section>
+
+              <!-- AI 免费配额卡 (F6) -->
+              <section class="ai-credits-card">
+                <div class="ai-credits-header">
+                  <div class="ai-credits-title-row">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg>
+                    <span class="ai-credits-title">AI 助手免费配额</span>
+                  </div>
+                  <span class="ai-credits-badge">每日刷新</span>
+                </div>
+                <div class="ai-credits-body">
+                  <div class="ai-credits-ring" id="aiQuotaRing" style="--ring-pct:84%;">
+                    <span class="ai-credits-ring-num" id="aiQuotaPercent">84</span>
+                    <span class="ai-credits-ring-unit">% 剩余</span>
+                  </div>
+                  <div class="ai-credits-info">
+                    <div class="ai-credits-remaining">今日剩余 <strong id="aiQuotaRemaining">42</strong> / 50 次</div>
+                    <p class="ai-credits-desc">每个新组局赠送固定免费额度，芝士排路线、奶糖算账随时待命，不收取任何费用。</p>
+                    <div class="ai-credits-progress">
+                      <div class="ai-credits-progress-bar" id="aiQuotaBar" style="width:84%;"></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 账户与信息 -->
+              <div class="settings-group-title">账户与信息</div>
+              <section class="settings-section">
+                <div class="settings-item" data-settings="profile">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+                    <div>
+                      <div class="settings-item-label">个人资料</div>
+                      <div class="settings-item-desc">昵称、头像、吃货标签</div>
+                    </div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-value">张三</span>
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+                <div class="settings-item" data-settings="wallet">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon ochre"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                    <div>
+                      <div class="settings-item-label">我的积分</div>
+                      <div class="settings-item-desc">复刻攻略、邀好友赚积分</div>
+                    </div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-value">260 分</span>
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 通知提醒 -->
+              <div class="settings-group-title">通知提醒</div>
+              <section class="settings-section">
+                <div class="settings-item">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+                    <div class="settings-item-label">组局邀请与动态</div>
+                  </div>
+                  <div class="settings-toggle is-on" data-toggle></div>
+                </div>
+                <div class="settings-item">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    <div class="settings-item-label">AI 行程方案就绪</div>
+                  </div>
+                  <div class="settings-toggle is-on" data-toggle></div>
+                </div>
+                <div class="settings-item">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+                    <div class="settings-item-label">AA 结算与转账提醒</div>
+                  </div>
+                  <div class="settings-toggle" data-toggle></div>
+                </div>
+              </section>
+
+              <!-- 隐私与安全 -->
+              <div class="settings-group-title">隐私与安全</div>
+              <section class="settings-section">
+                <div class="settings-item">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+                    <div class="settings-item-label">资料仅成员可见</div>
+                  </div>
+                  <div class="settings-toggle is-on" data-toggle></div>
+                </div>
+                <div class="settings-item">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                    <div class="settings-item-label">出行位置共享</div>
+                  </div>
+                  <div class="settings-toggle" data-toggle></div>
+                </div>
+                <div class="settings-item" data-settings="privacy">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon mauve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+                    <div>
+                      <div class="settings-item-label">隐私保护说明</div>
+                      <div class="settings-item-desc">账单与头像默认脱敏，归档可删</div>
+                    </div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 组局归档 -->
+              <div class="settings-group-title">组局管理</div>
+              <section class="settings-section">
+                <div class="settings-item" data-settings="archive">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg></span>
+                    <div>
+                      <div class="settings-item-label">归档组局</div>
+                      <div class="settings-item-desc">已结束的局可归档，账单可删</div>
+                    </div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-value">1 个已归档</span>
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+                <div class="settings-item" data-settings="cache">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon sage"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span>
+                    <div>
+                      <div class="settings-item-label">清理缓存</div>
+                      <div class="settings-item-desc">释放本地图片与 OCR 临时文件</div>
+                    </div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-value">12.4 MB</span>
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 关于 -->
+              <div class="settings-group-title">关于</div>
+              <section class="settings-section">
+                <div class="settings-item" data-settings="feedback">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>
+                    <div class="settings-item-label">意见反馈</div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+                <div class="settings-item" data-settings="about">
+                  <div class="settings-item-left">
+                    <span class="settings-item-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></span>
+                    <div class="settings-item-label">关于馋猫局儿</div>
+                  </div>
+                  <div class="settings-item-right">
+                    <span class="settings-item-value">v0.1.0</span>
+                    <span class="settings-item-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></span>
+                  </div>
+                </div>
+              </section>
+
+              <div class="settings-logout" data-settings="logout">退出登录</div>
+              <div class="settings-version">馋猫局儿 · 周末组局 AI 助手 · v0.1.0</div>
+            </div>
+          </div>
+
+          <!-- ================= PAGE 4: 组局详情页 (Crew Detail - Sub-page) ================= -->
+          <div class="mp-page sub-page" id="page-crew-detail" data-page="crew-detail">
+            <header class="mp-header">
+              <button class="btn-back" type="button" id="backToHomeBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+                <span>我的</span>
+              </button>
+              <div class="mp-title">
+                <span class="crew-title-text" id="headerCrewTitle">徐州周末局</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <!-- Sub Nav Tabs for Workspace -->
+            <nav class="crew-sub-nav">
+              <button class="sub-nav-item is-active" type="button" data-crew-tab="map">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg>
+                <span>地图地点</span>
+              </button>
+              <button class="sub-nav-item" type="button" data-crew-tab="ai">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M4.9 4.9l2.8 2.8M16.3 16.3l2.8 2.8M2 12h4M18 12h4M4.9 19.1l2.8-2.8M16.3 7.7l2.8-2.8"/><circle cx="12" cy="12" r="3"/></svg>
+                <span>AI行程</span>
+              </button>
+              <button class="sub-nav-item" type="button" data-crew-tab="expense">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                <span>AA账本</span>
+              </button>
+            </nav>
+
+            <div class="page-content crew-content">
+
+              <!-- TAB PANEL A: Map & Places — 全屏地图 + 底部抽屉 -->
+              <div class="crew-tab-panel is-active map-drawer-panel" id="crew-panel-map">
+                <!-- 全屏地图区域 -->
+                <div class="map-fullscreen-wrap">
+                  <!-- 地图浮层信息条 -->
+                  <div class="map-overlay-bar">
+                    <div class="map-overlay-info">
+                      <h3 id="detailCrewTitle">徐州周末局</h3>
+                      <p class="map-overlay-meta">
+                        <span id="detailCrewDate">本周六 · 8月1日</span>
+                        <span class="dot-sep">·</span>
+                        <span id="detailCrewMeta">6 人 · 北京南出发</span>
+                      </p>
+                    </div>
+                    <div class="member-avatars" id="detailCrewMembers">
+                      <!-- Avatars render dynamically -->
+                    </div>
+                  </div>
+
+                  <!-- 地图画布 -->
+                  <div class="map-canvas-full" id="mapCanvas">
+                    <svg class="map-svg" id="mapSvg" viewBox="0 0 360 320"></svg>
+                    <div id="mapPinsContainer"></div>
+                    <!-- 地图右下角统计 -->
+                    <div class="map-floating-badge">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      <strong id="mapStopsCount">3</strong> 个地点已排入
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 底部抽屉 -->
+                <div class="map-bottom-sheet" id="mapBottomSheet">
+                  <div class="sheet-handle-bar" id="sheetHandleBar">
+                    <div class="sheet-handle"></div>
+                  </div>
+                  <div class="sheet-header-row">
+                    <div class="sheet-title">
+                      <h4>地点池 (<span id="totalPlacesCount">8</span>)</h4>
+                      <span class="sheet-subtitle">点击地点可在地图上定位</span>
+                    </div>
+                    <button class="btn-add-place" type="button" id="goToAddPlaceBtn">
+                      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                      添加
+                    </button>
+                  </div>
+
+                  <!-- 筛选标签 -->
+                  <div class="pool-filter">
+                    <button class="filter-chip is-active" data-filter="all">全部 (<span id="countAll">8</span>)</button>
+                    <button class="filter-chip" data-filter="confirmed">已排行程 (<span id="countConfirmed">3</span>)</button>
+                    <button class="filter-chip" data-filter="candidate">备选候选 (<span id="countCandidate">5</span>)</button>
+                  </div>
+
+                  <!-- 地点卡片列表（可滚动） -->
+                  <div class="sheet-scroll-area" id="placeCardsList">
+                    <!-- Dynamically populated -->
+                  </div>
+                </div>
+              </div>
+
+              <!-- TAB PANEL B: AI Itinerary (Mascot Cheese) -->
+              <div class="crew-tab-panel" id="crew-panel-ai">
+                <!-- Mascot Cheese Banner -->
+                <section class="hero" aria-labelledby="trip-title">
+                  <div class="hero-info">
+                    <p class="eyebrow" id="aiCrewDate">本周六 · 2026 年 8 月 1 日</p>
+                    <h3 id="aiCrewTitle">徐州周末局</h3>
+                    <p class="trip-meta" id="aiCrewMeta">6 人 · 吃得痛快，顺路第一</p>
+                  </div>
+                  <div class="hero-cheese-img-wrap">
+                    <img src="./assets/cheese-cat.jpg" class="hero-cat-img" alt="芝士，胖白公猫，戴蓝色围巾和挎包">
+                    <div class="hero-cheese-tag">芝士</div>
+                  </div>
+                </section>
+
+                <!-- Guide Chat Box -->
+                <section class="guide" aria-live="polite">
+                  <div class="guide-avatar">
+                    <img src="./assets/cheese-blue-v3.jpg" alt="芝士">
+                  </div>
+                  <div class="guide-content">
+                    <p class="guide-title" data-ai-status>芝士把 3 个确认的地点排好了路线</p>
+                    <p class="guide-copy" data-ai-copy>先去早市避开人潮，再把午饭和傍晚散步放在同一片区。</p>
+                  </div>
+                </section>
+
+                <!-- Plan Switcher Tabs -->
+                <section class="plan-section">
+                  <div class="plan-switcher" role="tablist" aria-label="行程方案">
+                    <button class="plan-option is-active" type="button" role="tab" aria-selected="true" data-plan="food">吃得尽兴</button>
+                    <button class="plan-option" type="button" role="tab" aria-selected="false" data-plan="easy">轻松逛吃</button>
+                  </div>
+                </section>
+
+                <!-- AI Quick Prompts Tags -->
+                <div class="ai-quick-tags-container">
+                  <span class="quick-tag-label">快捷指令</span>
+                  <button class="chip-quick-prompt" type="button">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M6 8h12v9a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V8z"/><path d="M6 2v3M10 2v3M14 2v3"/></svg>
+                    下午加个甜品店
+                  </button>
+                  <button class="chip-quick-prompt" type="button">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 11h16M12 3v14"/></svg>
+                    19点前回高铁站
+                  </button>
+                  <button class="chip-quick-prompt" type="button">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+                    迟一点早饭出发
+                  </button>
+                </div>
+
+                <!-- Natural Language Input -->
+                <div class="ai-prompt-box">
+                  <input type="text" class="prompt-input" id="aiPromptInput" placeholder="向芝士提要求：如"避开早市，多睡会儿"">
+                  <button class="btn-prompt-send" type="button" id="btnAiPromptSend">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    调整
+                  </button>
+                </div>
+
+                <!-- Itinerary Timeline Stops -->
+                <div class="itinerary-header-row">
+                  <h4>当前规划路线</h4>
+                  <span class="manual-badge" id="manualAdjustBadge" style="display:none;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                    已手动调序
+                  </span>
+                </div>
+
+                <section class="itinerary" id="itineraryTimelineStops" data-stops aria-label="行程规划" aria-live="polite">
+                  <!-- Rendered dynamically with reorder buttons -->
+                </section>
+                <p class="live-status" aria-live="polite" data-live-status>点击地点打卡；点击右侧箭头可手动调序</p>
+
+                <!-- AI Reasoning Rationale -->
+                <section class="reason">
+                  <p class="eyebrow">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V18h6v-1.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg>
+                    芝士排路线的理由
+                  </p>
+                  <p data-reason>三站集中在市中心，午饭前不折返，傍晚留出 50 分钟逛云龙湖。</p>
+                  <div class="unselected-places-note">
+                    <span class="note-label">未采用地点及原因：</span>
+                    <span id="unselectedPlaces">老拾烧烤 (排队时间较长且不在午间片区，已备选至晚餐)</span>
+                  </div>
+                </section>
+
+                <!-- Companion Banner MilkSugar -->
+                <section class="milksugar" aria-label="奶糖提示">
+                  <div class="milksugar-avatar">
+                    <img src="./assets/milksugar-blue-v3.jpg" alt="奶糖">
+                  </div>
+                  <p><strong>奶糖精算已就位</strong><br>出行打卡到店后，在账本里直接点击记一笔 AA，我会自动理清谁该给谁转账哦！</p>
+                </section>
+
+                <!-- Itinerary Actions Footer -->
+                <footer class="actions">
+                  <button class="secondary" type="button" data-replan>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.5 9a9 9 0 0 1 14.9-3.4L23 10M1 14l4.6 4.4A9 9 0 0 0 20.5 15"/></svg>
+                    重新排一排
+                  </button>
+                  <button class="primary" type="button" data-adopt id="btnAdoptItinerary">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    采用这条路线
+                  </button>
+                </footer>
+              </div>
+
+              <!-- TAB PANEL C: AA Ledger (Mascot Milk Sugar) -->
+              <div class="crew-tab-panel" id="crew-panel-expense">
+                <!-- 消费概览卡 -->
+                <section class="expense-overview-card">
+                  <div class="expense-overview-top">
+                    <div class="expense-overview-title">
+                      <span class="expense-overview-eyebrow">AA 记账 · 奶糖精算</span>
+                      <h3>消费与平账</h3>
+                    </div>
+                    <div class="expense-hero-cat">
+                      <img src="./assets/milksugar-cat.jpg" class="hero-cat-img" alt="奶糖">
+                      <div class="hero-milk-tag">奶糖</div>
+                    </div>
+                  </div>
+                  <div class="expense-stat-cards">
+                    <div class="expense-stat-card income">
+                      <span class="expense-stat-label">总消费</span>
+                      <span class="expense-stat-value" id="statTotalExpense">￥1,280</span>
+                    </div>
+                    <div class="expense-stat-card expense">
+                      <span class="expense-stat-label">人均应付</span>
+                      <span class="expense-stat-value" id="statAvgExpense">￥213</span>
+                    </div>
+                  </div>
+                  <!-- 预算进度条 -->
+                  <div class="budget-bar-wrap">
+                    <div class="budget-bar-labels">
+                      <span>预算使用</span>
+                      <span class="budget-bar-amount"><strong id="budgetUsed">1,280</strong> / <span id="budgetTotal">1,800</span> 元</span>
+                    </div>
+                    <div class="budget-bar-track">
+                      <div class="budget-bar-fill" id="budgetBarFill" style="width:71%;"></div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- 消费明细 -->
+                <div class="expense-action-row">
+                  <h4>消费明细 (<span id="expenseCount">4</span> 笔)</h4>
+                  <button class="btn-primary-sm" type="button" id="goToAddExpenseBtn">
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3v10M3 8h10"/></svg>
+                    记一笔
+                  </button>
+                </div>
+
+                <!-- 消费列表 -->
+                <div class="expense-list" id="expenseList">
+                  <!-- Dynamically populated -->
+                </div>
+
+                <!-- 奶糖平账方案 -->
+                <section class="settlement-section">
+                  <div class="settlement-header">
+                    <div class="cat-milk-badge">
+                      <img src="./assets/milksugar-blue-v3.jpg" alt="奶糖" class="badge-cat-img">
+                      奶糖精算
+                    </div>
+                    <div>
+                      <h5>最少转账次数平账方案</h5>
+                      <p class="settlement-subtext">自动双向折抵，保证所有成员净额总和为 0</p>
+                    </div>
+                  </div>
+                  <div class="member-net-balances" id="memberNetBalances">
+                    <!-- Rendered dynamically -->
+                  </div>
+                  <div class="transfers-box">
+                    <p class="transfers-title">转账结算建议（点击按钮可一键复制）：</p>
+                    <ul class="transfer-list" id="transferList">
+                      <!-- Rendered dynamically -->
+                    </ul>
+                  </div>
+                  <button class="btn-copy-settlement" type="button" id="copySettlementBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                    复制结算结果文本
+                  </button>
+                  <button class="btn-publish-guide" type="button" id="goToPublishGuideBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                    发布为私密攻略并对外分享
+                  </button>
+                </section>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- ================= PAGE 5: 添加地点与 OCR 页 (Add Place - Sub-page) ================= -->
+          <div class="mp-page sub-page" id="page-add-place" data-page="add-place">
+            <header class="mp-header">
+              <button class="btn-back" type="button" id="backToCrewBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+                <span>组局</span>
+              </button>
+              <div class="mp-title">
+                <span class="header-title-text">添加新地点</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="page-content add-place-content">
+              <!-- Mode Tabs -->
+              <div class="modal-sub-tabs">
+                <button class="sub-tab is-active" data-add-mode="search" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+                  地图搜索
+                </button>
+                <button class="sub-tab" data-add-mode="ocr" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  截图OCR
+                </button>
+                <button class="sub-tab" data-add-mode="link" type="button">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+                  粘贴链接
+                </button>
+              </div>
+
+              <!-- Panel 1: POI Search -->
+              <div class="add-mode-panel is-active" id="addPanelSearch">
+                <div class="search-input-wrap">
+                  <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+                  <input type="text" id="poiSearchInput" placeholder="输入店名或景点，如"地锅鸡"">
+                </div>
+                <div class="poi-candidates" id="poiSearchResults"></div>
+              </div>
+
+              <!-- Panel 2: OCR Upload Simulator -->
+              <div class="add-mode-panel" id="addPanelOcr">
+                <div class="ocr-dropzone" id="ocrDropzone">
+                  <div class="dropzone-icon">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                  </div>
+                  <p>点击模拟上传小红书 / 抖音截图</p>
+                  <span class="ocr-tip">上传后触发 AI 扫描识别与高德地图 POI 候选匹配</span>
+                  <div class="scanner-laser" id="ocrLaser" style="display:none;"></div>
+                </div>
+                <div class="ocr-scanning-status" id="ocrScanningStatus" style="display:none;">
+                  <span class="spinner-mini">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg>
+                  </span>
+                  <span id="ocrStatusMsg">AI 正在扫描提取文字...</span>
+                </div>
+                <div class="ocr-result-preview" id="ocrResultPreview" style="display:none;">
+                  <div class="ocr-status-tag">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    OCR 自动识别成功 (置信度 94%)
+                  </div>
+                  <p class="ocr-text-extracted" id="ocrExtractedText">提取文本："徐州必吃排名第一的老拾烧烤，羊肉串绝了，地址在户部山。"</p>
+                  <label class="manual-input-label">
+                    <span>校对/确认店名：</span>
+                    <input type="text" id="ocrConfirmName" value="老拾烧烤 (户部山店)">
+                  </label>
+                  <div class="candidate-item" style="margin-top:10px;">
+                    <div>
+                      <strong>老拾烧烤 (户部山店)</strong>
+                      <p class="candidate-addr">高德 POI 匹配成功 · 状态：待确认</p>
+                    </div>
+                    <button class="btn-confirm-poi" type="button" id="btnOcrConfirm" data-confirm-name="老拾烧烤 (户部山店)" data-cat="晚餐">确认入库</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel 3: Paste Link -->
+              <div class="add-mode-panel" id="addPanelLink">
+                <input type="text" class="link-input" id="linkPasteInput" placeholder="粘贴小红书/抖音分享链接 (如: https://...)">
+                <p class="link-notice">提示：粘贴链接后 AI 将模拟抓取店名进行 POI 补全。</p>
+                <div class="link-loading-status" id="linkLoadingStatus" style="display:none;">
+                  <span class="spinner-mini">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.2-8.5" stroke-linecap="round"/></svg>
+                  </span>
+                  BFF 正在检索并隔离网页信息...
+                </div>
+                <button class="btn-confirm-poi" type="button" id="btnLinkConfirm" style="margin-top:12px; width:100%" data-confirm-name="链接识别地锅鸡" data-cat="午饭">一键解析并加入地点</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================= PAGE 6: 攻略详情与复刻页 (Guide Detail - Sub-page) ================= -->
+          <div class="mp-page sub-page" id="page-guide-detail" data-page="guide-detail">
+            <header class="mp-header">
+              <button class="btn-back" type="button" id="backToCrewFromGuideBtn">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4L6 8l4 4"/></svg>
+                <span>组局</span>
+              </button>
+              <div class="mp-title">
+                <span class="header-title-text">私密攻略分享</span>
+              </div>
+              <div class="mp-capsule">
+                <button class="capsule-btn" type="button" title="更多">
+                  <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor"><circle cx="2" cy="2" r="1.5"/><circle cx="8" cy="2" r="1.5"/><circle cx="14" cy="2" r="1.5"/></svg>
+                </button>
+                <span class="capsule-divider"></span>
+                <button class="capsule-btn capsule-close" type="button" title="关闭">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="5"/><path d="M4 6h4" stroke-linecap="round"/></svg>
+                </button>
+              </div>
+            </header>
+
+            <div class="page-content guide-detail-content">
+              <!-- Privacy Toggles Panel (Crew Owner Only) -->
+              <section class="privacy-card">
+                <h4>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  局主对外分享脱敏设置
+                </h4>
+                <p class="privacy-tip">对外生成分享卡片时，将隐藏隐私账目及转账，勾选以下可公开内容：</p>
+                <div class="privacy-toggles">
+                  <label class="toggle-item"><input type="checkbox" checked id="chkShowStops"> 展示打卡路线与推荐顺序</label>
+                  <label class="toggle-item"><input type="checkbox" checked id="chkShowVotes"> 展示地点热度标签 (如: 6人想去)</label>
+                  <label class="toggle-item"><input type="checkbox" checked id="chkShowBudget"> 展示人均参考预算区间</label>
+                  <label class="toggle-item is-disabled"><input type="checkbox" disabled checked> 默认已完全隐藏成员微信号与头像</label>
+                  <label class="toggle-item is-disabled"><input type="checkbox" disabled checked> 默认已完全隐藏单笔垫付与结算账单</label>
+                </div>
+              </section>
+
+              <!-- Guide Preview Card -->
+              <section class="guide-preview-card" id="guidePreviewCard">
+                <div class="guide-card-tag">私密分享卡片预览</div>
+                <div class="guide-card-title" id="guidePreviewTitle">徐州 1 日经典吃逛实战攻略</div>
+                <p class="guide-card-meta">由「馋猫局儿」AI 助手芝士与奶糖共同生成</p>
+                <div class="guide-route-preview" id="guideRoutePreview"></div>
+                <div class="guide-quote">"早市很热闹，羊肉馆份量真的很足，湖边散步体验非常顺路，强烈安利这个吃逛行程！"</div>
+              </section>
+
+              <!-- Replicate Action -->
+              <div class="replicate-actions">
+                <button class="btn-replicate-primary" type="button" id="openReplicateModalBtn">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                  点击一键复刻这个局
+                </button>
+                <p class="replicate-subtext">一键克隆此攻略包含的地点卡片，生成专属于你的新组局</p>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- /pages-viewport -->
+
+        <!-- Global WeChat Mini Program Bottom Tab Bar -->
+        <nav class="mp-tabbar" id="globalTabBar" aria-label="底部导航">
+          <button class="tab-item is-active" type="button" data-tab="home">
+            <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+            <span class="tab-label">我的局</span>
+          </button>
+          <button class="tab-item" type="button" data-tab="feed">
+            <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            <span class="tab-label">攻略圈</span>
+          </button>
+          <button class="tab-item" type="button" data-tab="profile">
+            <svg class="tab-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="tab-label">我的</span>
+          </button>
+        </nav>
+
+        <!-- ================= MODALS ================= -->
+        <!-- MODAL 1: Create Crew Modal -->
+        <div class="modal-overlay" id="createCrewModal" aria-hidden="true">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4>发起新的周末组局</h4>
+              <button class="btn-modal-close" id="closeCreateCrewModal" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <form id="createCrewForm" class="modal-form">
+              <label>
+                <span>组局主题</span>
+                <input type="text" id="newCrewTitle" placeholder="如：北京顺义滑雪局" required>
+              </label>
+              <label>
+                <span>出发日期</span>
+                <input type="date" id="newCrewDate" value="2026-08-08" required>
+              </label>
+              <label>
+                <span>出行人数 (4–10人优先)</span>
+                <input type="number" id="newCrewMembers" min="2" max="12" value="6" required>
+              </label>
+              <label>
+                <span>出发地</span>
+                <input type="text" id="newCrewStart" placeholder="北京南站" value="北京南站">
+              </label>
+              <label>
+                <span>预算偏好</span>
+                <select id="newCrewBudget">
+                  <option value="100-200">均摊￥100-200 (性价比优先)</option>
+                  <option value="200-300" selected>均摊￥200-300 (好吃舒服)</option>
+                  <option value="300+">均摊￥300+ (品质出游)</option>
+                </select>
+              </label>
+              <button type="submit" class="btn-submit-modal">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7z"/></svg>
+                让芝士与奶糖帮我们开局
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- MODAL 2: Add Expense Modal -->
+        <div class="modal-overlay" id="addExpenseModal" aria-hidden="true">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4>记一笔 AA 消费</h4>
+              <button class="btn-modal-close" id="closeAddExpenseModal" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <form id="addExpenseForm" class="modal-form">
+              <label>
+                <span>消费名称</span>
+                <input type="text" id="expName" placeholder="例如：买羊肉串、水费" required>
+              </label>
+              <label>
+                <span>金额 (元)</span>
+                <input type="number" step="0.01" id="expAmount" placeholder="100.00" required>
+              </label>
+              <label>
+                <span>垫付人</span>
+                <select id="expPayer"></select>
+              </label>
+              <label>
+                <span>参与人分摊（默认勾选所有人）</span>
+                <div class="participants-checkboxes" id="expParticipantsList"></div>
+              </label>
+              <label>
+                <span>关联地点 (可选)</span>
+                <select id="expPlaceSelect"></select>
+              </label>
+              <button type="submit" class="btn-submit-modal">保存并化简结算</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- MODAL 3: Replicate Crew Form -->
+        <div class="modal-overlay" id="replicateModal" aria-hidden="true">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4>复刻这个局 (克隆路线)</h4>
+              <button class="btn-modal-close" id="closeReplicateModal" type="button">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <form id="replicateForm" class="modal-form">
+              <label>
+                <span>克隆组局名称</span>
+                <input type="text" id="repCrewTitle" value="" required>
+              </label>
+              <label>
+                <span>出发日期</span>
+                <input type="date" id="repCrewDate" value="2026-08-15" required>
+              </label>
+              <label>
+                <span>新同行人数</span>
+                <input type="number" id="repCrewMembers" value="5" min="2" max="12" required>
+              </label>
+              <p class="replicate-form-tip">芝士已将原攻略的地点池与路线克隆。点确认将创建新组局！</p>
+              <button type="submit" class="btn-submit-modal">一键克隆并生成新局</button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </main>
+    <script src="./app.js"></script>
+  </body>
+</html>
