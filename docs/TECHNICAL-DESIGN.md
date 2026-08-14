@@ -1,12 +1,12 @@
 # 《馋猫局儿》技术设计方案（共享）
 
-**版本：** v0.1
+**版本：** v0.3
 **读者：** 前端、后端共同维护
 **产品定位：** 4–10 位朋友的周末美食短途组局工具；完成“收藏地点 → 共同决策 → AI 排行程 → 现场记账 → AA 结算 → 私密攻略/复刻”的闭环。
 
 ## 1. 决策摘要
 
-| 决策 | v0.1 选择 | 原因 |
+| 决策 | v0.3 选择 | 原因 |
 |---|---|---|
 | 工程组织 | Monorepo | 前后端独立运行与部署，同时共享接口、文档和规范。 |
 | 客户端 | Taro + React + TypeScript | 一套业务代码优先发布微信小程序，保留 Web 复用空间。 |
@@ -62,7 +62,7 @@ flowchart LR
 
 ## 4. 地图与成本策略
 
-### 4.1 v0.1 接入边界
+### 4.1 v0.3 接入边界
 
 `MapProvider` 至少提供：
 
@@ -87,7 +87,7 @@ calculateDistance(origins, destinations)
 
 - 对相同地点检索、相同行程输入计算缓存；缓存 Key 包含组局数据版本与指令摘要。
 - POI 输入提示在前端做 300–500ms 防抖；后端每用户和每组局限流。
-- 首版限制每局每日 AI 行程生成 3 次、截图识别 10 张；超限提示次日再试，不做充值。
+- 首版使用积分与次数双门槛：新用户 100 分，AI 行程 20 分/次，链接解析 5 分/次；同时限制每用户每日 3 次、本月 5 次 AI 行程，不开放充值。
 - 每次第三方调用记录：能力、供应商、耗时、成功、估算费用、缓存命中。
 
 官方价格/条款的核对链接：
@@ -100,17 +100,17 @@ calculateDistance(origins, destinations)
 
 | 实体 | 关键字段 | 说明 |
 |---|---|---|
-| `User` | `id, wechat_openid, nickname` | 身份与展示资料。 |
-| `Crew` | `id, owner_id, title, start_at, return_at, start_point, budget_range, status` | 一次“局”。 |
+| `User` | `id, wechat_openid, nickname, avatar_url, profile_completed_at` | 平台身份与用户明确确认后的展示资料。 |
+| `Crew` | `id, owner_id, title, start_at, return_at, region_code, status, visibility` | 一次攻略；创建时 visibility=private。 |
 | `CrewMember` | `crew_id, user_id, role, joined_at` | 成员与局主权限。 |
 | `Place` | `crew_id, name, category, lng, lat, provider, provider_poi_id, status` | 已确认或待确认地点。 |
 | `PlaceSource` | `place_id, type, url, image_id, ocr_text, confidence` | 手输、链接或截图来源；不抓取第三方正文。 |
 | `PlaceVote` | `place_id, user_id, choice, note` | 想去/不想去与备注。 |
 | `Itinerary` | `crew_id, version, state, constraints_json, selected_plan_id` | 可追溯行程版本。 |
-| `ItineraryStop` | `plan_id, place_id, order, eta_start, eta_end, decision_reason` | 行程站点。 |
+| `ItineraryStop` | `plan_id, place_id, day_index, local_date, local_start_time, order_in_day, duration_minutes, decision_reason` | 归属于攻略日期区间内某一天的行程站点。 |
 | `Expense` | `crew_id, paid_by, amount_cents, split_method, place_id` | 一笔消费。 |
 | `ExpenseShare` | `expense_id, user_id, amount_cents` | 消费分摊结果。 |
-| `GuideSnapshot` | `crew_id, token_hash, public_fields_json, version, published_at` | 脱敏的私密分享攻略快照。 |
+| `GuideSnapshot` | `crew_id, public_fields_json, version, review_state, published_at` | 审核通过后供公开广场使用的脱敏快照。 |
 
 所有可编辑实体均有 `created_at`、`updated_at`；账单、地点状态、已选行程保留审计事件。
 
@@ -138,7 +138,7 @@ sequenceDiagram
 
 ### 6.2 AI 行程
 
-1. API 汇总已确认地点、开放时间、投票、日期、出发/返程点、预算和用户指令。
+1. API 汇总已确认地点、开放时间、投票、攻略起止日期、出发/返程点和用户指令，并计算首尾包含的 day_count。
 2. 约束引擎先过滤不可用地点并给出 2–3 条距离/时段合理的候选顺序。
 3. LLM 仅能调用受控工具读取候选并生成结构化解释、取舍和可编辑计划。
 4. API 校验地点 ID、时间顺序、JSON Schema；失败则返回“未生成可用方案”。
@@ -148,14 +148,14 @@ sequenceDiagram
 
 - API 前缀：`/api/v1`；JSON；统一错误结构为 `code / message / request_id / details?`。
 - FastAPI 自动生成 OpenAPI；CI 导出 OpenAPI 后生成 `packages/api-types`。
-- 写接口携带访问令牌；服务端依据 `CrewMember` 判定权限，不信任客户端的 `owner` 字段。
+- 首版所有小程序业务接口（包括公开广场与公开详情）均携带访问令牌；服务端依据 `CrewMember` 判定私密资源权限，不信任客户端的 `owner` 字段。
 - 图片上传使用短时签名 URL 或受控上传接口；服务端校验 MIME、尺寸、文件大小并删除 EXIF 地理信息。
 - 攻略使用不可猜测 token；默认不包含成员、头像、单笔账目、转账关系、原截图和来源链接。
 - 日志中不得记录访问令牌、完整地址、图片内容或模型原始提示词中的敏感资料。
 
 ## 8. 非功能要求与验收
 
-| 维度 | v0.1 标准 |
+| 维度 | v0.4 标准 |
 |---|---|
 | 正确性 | 任意账本下净额和为 0；债务化简与金额计算有单测。 |
 | 可用性 | AI/OCR/地图失败时，手动地点、手动排序和账本仍可使用。 |
@@ -166,14 +166,113 @@ sequenceDiagram
 ## 9. 开工顺序
 
 1. 建立 Monorepo、前后端骨架、OpenAPI 类型生成和本地数据库。
-2. 完成登录模拟、组局/成员、手动地点和地图列表联动。
+2. 完成微信 code 会话交换、头像/昵称确认、私密攻略与成员权限。
 3. 完成账本、分摊与结算算法，先用单元测试锁定正确性。
 4. 接入高德 POI 与路线，增加缓存、限流和调用日志。
 5. 接入截图 OCR 的候选确认流程。
-6. 接入受控 AI 行程和私密攻略/复刻。
+6. 接入受控 AI 行程、发布审核、公开快照与复刻。
 
 ## 10. 当前未决项
 
-- 微信登录的 AppID、正式发布主体和隐私政策在提交审核前确定；本地开发先使用模拟身份。
+- 微信登录的 AppID、正式发布主体和隐私政策在提交审核前确定；HTML 原型只模拟 code 换取会话及头像/昵称确认，不代表真实接口已接入。
 - OCR/LLM 厂商在实现时根据可用预算确定，但必须满足结构化输出和调用日志要求。
 - 正式商业运营前重新核对地图、LLM、对象存储与用户数据处理条款。
+
+## 11. v0.2 架构增补
+
+### 新增服务边界
+
+~~~text
+小程序 → Link Parse API → URL 白名单/缓存 → 公开元信息或用户文本/截图
+                                      → OCR/实体提取 → MapProvider POI 候选 → 用户确认
+小程序 → AI Task API → Credit Reservation → 约束引擎/LLM → Confirm 或 Release
+发布审核事件 → Public Guide Index + Credit Reward
+~~~
+
+新增领域实体：
+
+| 实体 | 关键字段 | 说明 |
+|---|---|---|
+| LinkParseJob | user_id, crew_id, normalized_url_hash, state, cost_snapshot | 分享链接异步解析任务。 |
+| LinkPlaceCandidate | job_id, name, confidence, poi_candidates_json, selected_poi_id | 未经用户确认不得成为正式地点。 |
+| CreditAccount | user_id, balance, version | 通过行锁或乐观锁防止并发透支。 |
+| CreditLedgerEntry | user_id, delta, reason, rule_version, idempotency_key | 不可变积分流水。 |
+| CreditReservation | task_id, amount, state, expires_at | AI 任务预占、确认或释放。 |
+| AiUsageCounter | user_id, period, used | 每日与每月限频。 |
+| UserSetting | user_id, notifications_json, privacy_json | 设置页偏好。 |
+
+### 统一门槛
+
+AI 行程任务必须同时满足：
+
+- 已确认地点数不少于 3。
+- 积分余额不少于 20。
+- 本月 AI 行程少于 5 次。
+- 今日 AI 行程少于 3 次。
+
+链接解析成功确认时扣 5 分；任务失败或进入 fallback 不扣。公开攻略审核通过奖励 30 分，每月最多 3 次。所有数值由带版本的规则配置提供，客户端展示服务端返回的规则快照。
+
+### 文档一致性
+
+需求变化后按以下优先级更新：PRD → TECHNICAL-DESIGN → FRONTEND/BACKEND-IMPLEMENTATION → README → 历史决策增补。API、状态机、费用、权限、验收标准必须跨文档一致。
+
+## 12. v0.3 身份、可见性与视觉增补
+
+### 微信身份与展示资料
+
+~~~text
+小程序 wx.login → 一次性 code → POST /auth/wechat/session
+                                  → 服务端 code2Session → User/OpenID → 业务 access token
+
+用户选择头像 + 输入昵称 → PATCH /me/profile → 已确认的展示资料
+~~~
+
+身份建立与资料确认是两个状态。首次用户完成头像昵称确认后才通过产品 AuthGate；后续资料修改失败不撤销已建立会话。一次性 code、session_key 和 OpenID 不写客户端持久化或业务日志；会话令牌使用短期访问令牌与可撤销刷新机制。
+
+### 攻略可见性状态
+
+~~~text
+private → reviewing → published
+    ↑          |
+    └──────────┘ 审核拒绝或创建者撤回
+~~~
+
+- `private`：仅创建者与 CrewMember 可读写。
+- `reviewing`：私密协同继续可用，但公开快照尚不可搜索。
+- `published`：生成独立 GuideSnapshot 并写入公开索引；私密实体继续受成员权限保护。
+- 任何公开查询只读取 GuideSnapshot，不得回退读取 Crew、Expense、ExpenseSplit、Settlement、Transfer、PlaceSource 或成员资料；AA 字段禁止进入公开 DTO。
+- “我创建的”按 owner_id 查询；“我加入的”按 CrewMember 查询并排除 owner；“收藏”只引用可见的公开快照。
+
+新增实体：
+
+| 实体 | 关键字段 | 说明 |
+|---|---|---|
+| PublicationSubmission | crew_id, snapshot_version, state, submitted_by, reviewed_at | 发布审核状态和审计。 |
+| SavedGuide | user_id, guide_snapshot_id, created_at | 用户收藏；快照下架后不可继续公开访问。 |
+| UserSession | user_id, refresh_token_hash, expires_at, revoked_at | 可撤销业务会话。 |
+
+### 原型视觉令牌
+
+原型提供四套候选主题：日光橘、珊瑚汽水、青柚森林、莓果晴空。主题只改变品牌主色、辅色、状态色和有限渐变；布局合同固定为 18px 内容卡圆角、12–16px 内边距、1px 浅边框和轻阴影。正式客户端只保留最终确认主题，其他主题不构成服务端用户偏好合同。
+
+添加地点首版只保留 POI 搜索和公开分享链接识别。地图仍用于展示已确认地点和规划路线，但不提供地图中心点创建地点。
+
+### v0.4 首次进入与公开详情数据流
+
+~~~text
+启动/分享深链 → AuthGate → wx.login code → 业务会话 → 头像昵称确认 → 首页/恢复目标页
+公开卡片 → PublicGuideSnapshot 详情 → 收藏 或 复制公开路线 → 新建 private 攻略
+~~~
+
+- 身份会话与展示资料是两个步骤；首次产品门槛要求两步完成，后续资料更新不影响会话。
+- intended_route 只保存页面标识和公开 snapshot_id，不保存一次性 code 或 session_key。
+- PublicGuideSnapshot 使用显式 allow-list：标题、目的地、start_date、end_date、day_count、公开标签、公开媒体、带 day_index/local_date 的路线节点和统计信息。
+- Expense、ExpenseSplit、Settlement、Transfer、CrewMember、PlaceSource 与内部评论只能存在私密域，发布管道和公开查询层都不能引用。
+
+### 按天行程不变量
+
+- `day_count = end_date - start_date + 1`，按目的地本地自然日计算，首尾日期均包含。
+- 每个 ItineraryStop 必须满足 `1 <= day_index <= day_count`，且 `local_date = start_date + day_index - 1`；服务端不信任客户端传入的派生日期。
+- 同一天使用 `order_in_day` 和 `local_start_time` 排序。跨天移动同时更新 day_index、local_date、order_in_day，并使受影响交通段进入待重算状态。
+- AI 可在某些日期返回空数组，但不得生成日期区间外节点或为了填满天数虚构地点。
+- 公开快照和私密套用保留日期区间与 day_index；账本和成员关系仍不复制。

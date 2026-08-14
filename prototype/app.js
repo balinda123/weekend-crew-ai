@@ -1,1478 +1,342 @@
-/**
- * 馋猫局儿 · AI 组局小程序原型交互逻辑 (多页面重构版)
- */
-
-// 1. 全局模拟数据库状态
-const AI_DAILY_QUOTA = 50;   // 每日免费 AI 助手调用次数 (F6)
-let aiUsedToday = 8;         // 今日已使用次数
-
-const usersList = ['张三', '李四', '王五', '赵六', '孙七', '周八', '小甲', '小乙'];
-
-const initialCrews = {
-  crew1: {
-    id: 'crew1',
-    title: '徐州周末局',
-    date: '2026-08-01',
-    members: ['张三', '李四', '王五', '赵六', '孙七', '周八'],
-    startPoint: '北京南站',
-    budgetRange: '200-300',
-    status: 'active',
-    currentPlan: 'food',
-    manualAdjusted: false,
-    places: [
-      { id: 'p1', name: '丰储街早市', cat: '早餐', detail: '地道早市，推荐胡辣汤', votes: 5, status: 'confirmed', x: 40, y: 115 },
-      { id: 'p2', name: '两来风羊肉馆', cat: '午饭', detail: '避开高峰，芝士投票最高', votes: 6, status: 'confirmed', x: 180, y: 70 },
-      { id: 'p3', name: '云龙湖 · 湖东路', cat: '景点', detail: '晚饭前湖边散步1小时', votes: 4, status: 'confirmed', x: 300, y: 120 },
-      { id: 'p4', name: '老拾烧烤 (户部山店)', cat: '晚饭', detail: '截图OCR识别匹配候选', votes: 5, status: 'candidate', x: 275, y: 45 },
-      { id: 'p5', name: '户部山小吃街', cat: '小吃', detail: '徐州老牌地标小吃街', votes: 6, status: 'candidate', x: 140, y: 30 },
-      { id: 'p6', name: '回龙窝历史街区', cat: '景点', detail: '饭后街区漫步拍照', votes: 4, status: 'candidate', x: 90, y: 25 },
-    ],
-    plans: {
-      food: {
-        title: '芝士的吃逛路线',
-        copy: '先去早市避开人潮，再把午饭和傍晚散步放在同一片区。',
-        reason: '三站集中在市中心，午饭前不折返，傍晚留出 50 分钟逛云龙湖。',
-        unselected: '老拾烧烤 (排队时间较长且不在午间片区，已备选至晚餐)',
-        stops: [
-          { time: '09:40', type: '早餐', name: '丰储街早市', detail: '先垫垫肚子，走路 6 分钟', votes: '5想去', id: 'p1' },
-          { time: '12:10', type: '午饭', name: '两来风羊肉馆', detail: '避开午高峰，芝士投票最高', votes: '6想去', id: 'p2' },
-          { time: '17:20', type: '傍晚', name: '云龙湖 · 湖东路', detail: '晚饭前散步，打车 12 分钟', votes: '4想去', id: 'p3' },
-        ]
-      },
-      easy: {
-        title: '奶糖的轻松逛吃',
-        copy: '把步行距离压到最低，给每一顿留够慢慢吃的时间。',
-        reason: '上午只安排一个地点，午后不跨区，适合不想早起的朋友。',
-        unselected: '丰储街早市 (离酒店稍远)、高铁站附近烧烤 (返程偏慢)',
-        stops: [
-          { time: '10:30', type: '早午餐', name: '户部山小吃街', detail: '一站吃到多种徐州味', votes: '6想去', id: 'p5' },
-          { time: '14:30', type: '闲逛', name: '回龙窝历史街区', detail: '饭后步行 8 分钟', votes: '4想去', id: 'p6' },
-          { time: '18:10', type: '晚饭', name: '老拾烧烤 (户部山店)', detail: '提前取号，奶糖建议 AA 记账', votes: '5想去', id: 'p4' },
-        ]
-      }
-    },
-    expenses: [
-      { id: 'e1', title: '两来风羊肉馆午饭', amount: 360.0, payer: '张三', place: '两来风羊肉馆', participants: ['张三', '李四', '王五', '赵六', '孙七', '周八'] },
-      { id: 'e2', title: '云龙湖打车交通', amount: 48.0, payer: '李四', place: '打车交通', participants: ['张三', '李四', '王五', '赵六', '孙七', '周八'] },
-      { id: 'e3', title: '丰储街早市小吃买单', amount: 120.0, payer: '王五', place: '丰储街早市', participants: ['张三', '李四', '王五', '赵六'] },
-      { id: 'e4', title: '晚上老拾烧烤聚餐', amount: 752.0, payer: '张三', place: '老拾烧烤', participants: ['张三', '李四', '王五', '赵六', '孙七', '周八'] },
-    ]
-  },
-  crew2: {
-    id: 'crew2',
-    title: '北京野三坡踏青避暑局',
-    date: '2026-07-15',
-    members: ['张三', '李四', '王五', '赵六', '孙七', '周八', '小甲', '小乙'],
-    startPoint: '北京西站',
-    budgetRange: '100-200',
-    status: 'done',
-    currentPlan: 'default',
-    manualAdjusted: false,
-    places: [
-      { id: 'p10', name: '百里峡景区', cat: '景点', detail: '野三坡王牌峡谷，需步行4小时', votes: 8, status: 'confirmed', x: 60, y: 40 },
-      { id: 'p11', name: '拒马河漂流', cat: '娱乐', detail: '高山漂流很凉快，易湿身', votes: 7, status: 'confirmed', x: 190, y: 110 },
-      { id: 'p12', name: '野三坡烧烤大排档', cat: '晚饭', detail: '尝尝本地烤虹鳟鱼', votes: 8, status: 'confirmed', x: 290, y: 60 }
-    ],
-    plans: {
-      default: {
-        title: '芝士的峡谷漂流路线',
-        copy: '上午进百里峡避暑，下午坐竹排漂流，晚上烤虹鳟鱼。',
-        reason: '上午百里峡温度最低，下午玩水不晒，路线完全顺路。',
-        unselected: '鱼骨洞 (排队过长且时间不够)',
-        stops: [
-          { time: '09:00', type: '景点', name: '百里峡景区', detail: '避开正午烈日，徒步爬山', votes: '8想去', id: 'p10' },
-          { time: '14:30', type: '漂流', name: '拒马河漂流', detail: '下午玩水，打水仗凉爽', votes: '7想去', id: 'p11' },
-          { time: '18:00', type: '美食', name: '野三坡烧烤大排档', detail: '返程前聚餐烤鱼', votes: '8想去', id: 'p12' }
-        ]
-      }
-    },
-    expenses: [
-      { id: 'e10', title: '百里峡景区门票团购', amount: 800.0, payer: '张三', place: '百里峡景区', participants: ['张三', '李四', '王五', '赵六', '孙七', '周八', '小甲', '小乙'] },
-      { id: 'e11', title: '拒马河漂流包车', amount: 350.0, payer: '李四', place: '拒马河漂流', participants: ['张三', '李四', '王五', '赵六', '孙七', '周八', '小甲', '小乙'] },
-    ]
-  }
-};
-
-let crews = JSON.parse(JSON.stringify(initialCrews)); // 内存深拷贝，支持复刻新增
-let currentCrewId = 'crew1';
-
-// 2. 预置攻略圈数据
-const feedGuides = [
-  { id: 'guide1', title: '徐州经典 1 日吃逛实战攻略', author: '张三', authorAvatar: '张', cost: '￥213', reps: '58次复刻', crewId: 'crew1' },
-  { id: 'guide2', title: '北京郊游 · 野三坡峡谷漂流攻略', author: '李四', authorAvatar: '李', cost: '￥143', reps: '124次复刻', crewId: 'crew2' },
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const icons=()=>window.lucide?.createIcons();
+const feedData=[
+ {city:"大理",title:"苍山洱海 4 天慢游路线",match:98,likes:2684,uses:812,color:"blue",tag:"慢旅行",days:4,places:9,distance:"27 km",start:"2026-10-02"},
+ {city:"成都",title:"3 天 2 晚本地吃货路线",match:95,likes:4521,uses:1206,color:"orange",tag:"美食",days:3,places:8,distance:"18 km",start:"2026-10-18"},
+ {city:"泉州",title:"古城簪花与闽南烟火",match:92,likes:1830,uses:529,color:"green",tag:"摄影",days:3,places:7,distance:"16 km",start:"2026-11-06"},
+ {city:"阿勒泰",title:"北疆环线 7 日自驾攻略",match:96,likes:3210,uses:997,color:"yellow",tag:"自驾",days:7,places:14,distance:"860 km",start:"2026-09-20"},
+ {city:"杭州",title:"西湖边的松弛周末",match:89,likes:936,uses:341,color:"green",tag:"周末",days:2,places:6,distance:"12 km",start:"2026-10-24"},
+ {city:"青岛",title:"沿海散步与啤酒地图",match:91,likes:1518,uses:472,color:"blue",tag:"海边",days:3,places:8,distance:"22 km",start:"2026-09-25"},
+ {city:"长沙",title:"24 小时夜宵特种兵",match:94,likes:2209,uses:615,color:"orange",tag:"美食",days:1,places:6,distance:"11 km",start:"2026-10-01"},
+ {city:"景德镇",title:"两天逛窑厂与陶溪川",match:87,likes:764,uses:203,color:"yellow",tag:"手作",days:2,places:6,distance:"15 km",start:"2026-11-14"}
 ];
-
-// ================= 3. 极简小程序路由管理器 =================
-const PageRouter = {
-  currentTab: 'home',
-  pageStack: ['page-home'],
-
-  init() {
-    // 底部全局 Tabbar 点击监听
-    document.querySelectorAll('.mp-tabbar .tab-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const targetTab = item.dataset.tab;
-        this.switchTab(targetTab);
-      });
-    });
-
-    // 监听子页面返回按钮
-    document.querySelectorAll('.mp-page .btn-back').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.back();
-      });
-    });
-  },
-
-  switchTab(tabId) {
-    this.currentTab = tabId;
-    this.pageStack = [`page-${tabId}`];
-    
-    // 更新底部 Tabbar 高亮
-    document.querySelectorAll('.mp-tabbar .tab-item').forEach(item => {
-      item.classList.toggle('is-active', item.dataset.tab === tabId);
-    });
-
-    // 更新页面 active 状态
-    document.querySelectorAll('.mp-page').forEach(page => {
-      page.classList.toggle('is-active', page.id === `page-${tabId}`);
-    });
-
-    // 如果切到了"我的"，刷新 AI 配额展示
-    if (tabId === 'profile') {
-      updateAiQuotaUI();
-    }
-  },
-
-  navigateTo(pageId) {
-    // 添加到路由栈
-    this.pageStack.push(pageId);
-    
-    // 打开子页面
-    const targetPage = document.getElementById(pageId);
-    if (targetPage) {
-      targetPage.classList.add('is-active');
-    }
-  },
-
-  back() {
-    if (this.pageStack.length <= 1) return;
-    
-    const curPageId = this.pageStack.pop();
-    const curPage = document.getElementById(curPageId);
-    if (curPage) {
-      curPage.classList.remove('is-active');
-    }
-    
-    // 渲染退回后的当前页面数据
-    const prevPageId = this.pageStack[this.pageStack.length - 1];
-    if (prevPageId === 'page-crew-detail') {
-      const crew = crews[currentCrewId];
-      // 触发详情重绘
-      renderCrewWorkspace(crew);
-    } else if (prevPageId === 'page-profile') {
-      updateAiQuotaUI();
-    }
-  }
+const initialPlaces=[
+ {name:"大理古城",type:"游",desc:"建议 2.5 小时 · 适合摄影",votes:4,icon:"landmark"},
+ {name:"段公子 · 天龙八部店",type:"吃",desc:"午餐 · 人均 ¥86",votes:6,icon:"utensils"},
+ {name:"才村码头",type:"游",desc:"日落前抵达 · 门票免费",votes:3,icon:"sunset"}
+];
+const candidates=[
+ {name:"崇圣寺三塔",desc:"大理地标 · 建议 2 小时",type:"游",icon:"landmark"},
+ {name:"喜洲古镇",desc:"白族古镇 · 适合半日游",type:"游",icon:"camera"},
+ {name:"双廊古镇",desc:"洱海东岸 · 日落热门地",type:"游",icon:"sunset"},
+ {name:"云里伴山咖啡",desc:"苍山景观位 · 人均 ¥52",type:"吃",icon:"coffee"}
+];
+const initialStops=[
+ {day:1,time:"09:30",name:"大理古城",desc:"建议 2.5 小时 · 已预约讲解",tag:"游 · 适合摄影",duration:"2.5 小时"},
+ {day:1,time:"12:20",name:"段公子 · 天龙八部店",desc:"午餐 1.5 小时 · 人均 ¥86",tag:"吃 · 4人想去",duration:"1.5 小时"},
+ {day:1,time:"15:00",name:"才村码头",desc:"日落前抵达 · 门票免费",tag:"游 · 最佳光线 17:40",duration:"2.5 小时"}
+];
+let guide={name:"大理古城和洱海慢游",province:"云南省",city:"大理市",district:"大理镇",start:"2026-09-12",end:"2026-09-15"};
+let places=structuredClone(initialPlaces),stops=structuredClone(initialStops),itineraryGenerated=false;
+let expenses=[
+ {name:"段公子午餐",payer:"晶晶",split:"4人均分",amount:516,icon:"utensils"},
+ {name:"古城讲解",payer:"阿豪",split:"4人均分",amount:186,icon:"landmark"},
+ {name:"洱海打车",payer:"小乔",split:"4人均分",amount:296,icon:"car-taxi-front"},
+ {name:"咖啡与小吃",payer:"林一",split:"4人均分",amount:270,icon:"coffee"}
+];
+let settlementGenerated=false,dragIndex=null,loadingTimer=null;
+let credits=100,aiUses=0,dailyAiUses=0,currentPlaceDraft=null,selectedPlaceType="游",currentPublishGuideId=null;
+let loginFromFirstLaunch=false,publicReturnView="home",currentPublicTrip=null,currentPublicStops=[];
+const ownedGuides=[
+ {id:"dali-own",city:"大理",title:"苍山洱海 4 天慢游路线",color:"blue",status:"published",members:4,places:9,updated:"昨天更新"},
+ {id:"chengdu-own",city:"成都",title:"成都朋友的吃货周末",color:"orange",status:"private",members:5,places:6,updated:"2 小时前"},
+ {id:"quanzhou-own",city:"泉州",title:"泉州簪花与古城散步",color:"green",status:"private",members:3,places:4,updated:"周一更新"}
+];
+const joinedGuides=[
+ {id:"altay-join",city:"阿勒泰",title:"北疆公路与夏牧场",color:"yellow",status:"private",members:6,places:12,updated:"阿豪创建"},
+ {id:"qingdao-join",city:"青岛",title:"沿海散步与啤酒地图",color:"blue",status:"published",members:4,places:8,updated:"小乔创建"}
+];
+const extractedPlaces=[
+ {name:"老拾烧烤老店",desc:"丰泽区东海街道 · 烧烤",type:"吃",icon:"utensils",confidence:96},
+ {name:"西街钟楼",desc:"鲤城区西街 · 城市地标",type:"游",icon:"landmark",confidence:98},
+ {name:"莓超疯天台机位",desc:"西街附近 · 日落摄影",type:"游",icon:"camera",confidence:89},
+ {name:"泉州木偶剧院",desc:"丰泽区泉山路 · 需预约",type:"游",icon:"theater",confidence:93}
+];
+const regionCities={
+ "北京市":["北京市"],"天津市":["天津市"],"河北省":["石家庄市","秦皇岛市","承德市"],"山西省":["太原市","大同市"],"内蒙古自治区":["呼和浩特市","包头市","呼伦贝尔市"],
+ "辽宁省":["沈阳市","大连市"],"吉林省":["长春市","延边州"],"黑龙江省":["哈尔滨市","牡丹江市"],"上海市":["上海市"],"江苏省":["南京市","苏州市","无锡市"],
+ "浙江省":["杭州市","宁波市","湖州市"],"安徽省":["合肥市","黄山市"],"福建省":["福州市","厦门市","泉州市"],"江西省":["南昌市","景德镇市","上饶市"],
+ "山东省":["济南市","青岛市","烟台市"],"河南省":["郑州市","洛阳市","开封市"],"湖北省":["武汉市","宜昌市"],"湖南省":["长沙市","张家界市"],
+ "广东省":["广州市","深圳市","珠海市"],"广西壮族自治区":["南宁市","桂林市","北海市"],"海南省":["海口市","三亚市"],"重庆市":["重庆市"],
+ "四川省":["成都市","乐山市","阿坝州"],"贵州省":["贵阳市","黔东南州"],"云南省":["昆明市","大理市","丽江市"],"西藏自治区":["拉萨市","林芝市"],
+ "陕西省":["西安市","延安市"],"甘肃省":["兰州市","敦煌市"],"青海省":["西宁市","海西州"],"宁夏回族自治区":["银川市","中卫市"],
+ "新疆维吾尔自治区":["乌鲁木齐市","阿勒泰地区","伊犁州"],"香港特别行政区":["香港岛","九龙"],"澳门特别行政区":["澳门半岛","氹仔"],"台湾省":["台北市","高雄市","台中市"]
 };
-
-// ================= 4. AI 免费配额管理 (F6) =================
-// 静默记录每次 AI 调用并扣减每日免费配额，同步更新"我的"页面配额环
-function logApiCall(apiPath, method, status, details, tokensUsed, costYuan) {
-  // 仅对真实消耗模型能力的调用计数 (排行程 / OCR / 攻略生成 / POI 检索)
-  if (/itinerary|ocr|guide|poi\/search/.test(apiPath)) {
-    aiUsedToday = Math.min(AI_DAILY_QUOTA, aiUsedToday + 1);
-  }
-  updateAiQuotaUI();
-}
-
-// 更新个人中心 AI 配额环与进度条
-function updateAiQuotaUI() {
-  const remaining = Math.max(0, AI_DAILY_QUOTA - aiUsedToday);
-  const percent = Math.round((remaining / AI_DAILY_QUOTA) * 100);
-
-  const ringEl = document.getElementById('aiQuotaRing');
-  if (ringEl) ringEl.style.setProperty('--ring-pct', percent + '%');
-
-  const percentEl = document.getElementById('aiQuotaPercent');
-  if (percentEl) percentEl.textContent = percent;
-
-  const remainingEl = document.getElementById('aiQuotaRemaining');
-  if (remainingEl) remainingEl.textContent = remaining;
-
-  const barEl = document.getElementById('aiQuotaBar');
-  if (barEl) barEl.style.width = percent + '%';
-}
-
-// ================= 5. 地图引擎：动态 SVG 绘制 =================
-function drawInteractiveMap(crew) {
-  const mapSvg = document.getElementById('mapSvg');
-  const pinsContainer = document.getElementById('mapPinsContainer');
-  if (!mapSvg || !pinsContainer) return;
-
-  mapSvg.innerHTML = '';
-  pinsContainer.innerHTML = '';
-
-  const confirmedStops = crew.places.filter(p => p.status === 'confirmed');
-  const candidateStops = crew.places.filter(p => p.status === 'candidate');
-
-  // 1. 绘制网格背景线（适配新 viewBox 360x320）
-  mapSvg.innerHTML += `
-    <line x1="0" y1="160" x2="360" y2="160" stroke="#E8DDD0" stroke-dasharray="4,4" stroke-width="1" />
-    <line x1="180" y1="0" x2="180" y2="320" stroke="#E8DDD0" stroke-dasharray="4,4" stroke-width="1" />
-    <line x1="0" y1="80" x2="360" y2="80" stroke="#EDE3D6" stroke-dasharray="2,6" stroke-width="0.5" />
-    <line x1="0" y1="240" x2="360" y2="240" stroke="#EDE3D6" stroke-dasharray="2,6" stroke-width="0.5" />
-  `;
-
-  // 2. 如果存在确认点，根据顺序连线
-  if (confirmedStops.length > 1) {
-    let pathD = `M ${confirmedStops[0].x} ${confirmedStops[0].y}`;
-    for (let idx = 1; idx < confirmedStops.length; idx++) {
-      pathD += ` L ${confirmedStops[idx].x} ${confirmedStops[idx].y}`;
-    }
-    
-    // 渲染背景虚线和高亮游走实线
-    mapSvg.innerHTML += `
-      <path class="route-polyline" d="${pathD}" fill="none" stroke="#4FA8DB" stroke-width="4" stroke-linecap="round" stroke-dasharray="6,4" />
-      <path class="route-active-line" d="${pathD}" fill="none" stroke="#FF6B5B" stroke-width="4" stroke-linecap="round" />
-    `;
-  }
-
-  // 3. 动态渲染 confirmed Pin 地标气泡
-  // Y 坐标缩放：旧地图高 180px → 新地图动态高度，按比例放大
-  const mapWrap = mapSvg.closest('.map-canvas-full') || mapSvg.parentElement;
-  const mapH = mapWrap ? mapWrap.offsetHeight : 320;
-  const yScale = Math.max(1.4, mapH / 180);
-
-  confirmedStops.forEach((place, index) => {
-    const isActive = index === 0 ? 'is-active' : '';
-    const scaledY = place.y * yScale;
-    pinsContainer.innerHTML += `
-      <div class="map-pin pin-1 ${isActive}" data-place-id="${place.id}" style="top: ${scaledY}px; left: ${place.x}px;">
-        <span class="pin-badge">${index + 1}</span>
-        <div class="pin-popup">${place.name} <span class="pin-vote">${place.votes}想去</span></div>
-      </div>
-    `;
-  });
-
-  // 4. 动态渲染 candidate Pin 地标
-  candidateStops.forEach((place) => {
-    const scaledY = place.y * yScale;
-    pinsContainer.innerHTML += `
-      <div class="map-pin pin-candidate" data-place-id="${place.id}" style="top: ${scaledY}px; left: ${place.x}px;">
-        <span class="pin-badge">备</span>
-        <div class="pin-popup">${place.name} (备选)</div>
-      </div>
-    `;
-  });
-
-  // 5. 绑定 Pin 点击事件，联动高亮 PlaceCard
-  pinsContainer.querySelectorAll('.map-pin').forEach(pin => {
-    pin.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const pid = pin.dataset.placeId;
-      pinsContainer.querySelectorAll('.map-pin').forEach(p => p.classList.remove('is-active'));
-      pin.classList.add('is-active');
-
-      // 滚动/联动高亮地点卡片列表
-      document.querySelectorAll('.place-card-item').forEach(card => {
-        const isMatched = card.dataset.placeCardId === pid;
-        card.classList.toggle('is-selected', isMatched);
-        if (isMatched) {
-          card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
-    });
-  });
-}
-
-// ================= 6. 首页 & 发现 & 详情渲染 =================
-function renderHomeCrews() {
-  const container = document.getElementById('homeCrewCardsList');
-  if (!container) return;
-
-  container.innerHTML = Object.values(crews).map(crew => {
-    const isDone = crew.status === 'done';
-    const statusText = isDone ? '已结算' : '拼局协作中';
-    const badgeCls = isDone ? 'done' : '';
-    const stopCount = crew.places.filter(p => p.status === 'confirmed').length;
-
-    return `
-      <div class="crew-card" data-crew-id="${crew.id}">
-        <div class="crew-card-title">${crew.title}</div>
-        <div class="crew-card-date"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> 日期: ${crew.date} · 出发: ${crew.startPoint}</div>
-        <div class="crew-card-info-row">
-          <div class="crew-card-meta"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg> ${crew.members.length} 人同行 · 已排入 ${stopCount} 处地点</div>
-          <span class="crew-card-status-badge ${badgeCls}">${statusText}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-
-  // 绑定点击进入详情路由
-  container.querySelectorAll('.crew-card').forEach(card => {
-    card.addEventListener('click', () => {
-      currentCrewId = card.dataset.crewId;
-      const crew = crews[currentCrewId];
-      renderCrewWorkspace(crew);
-      PageRouter.navigateTo('page-crew-detail');
-      
-      logApiCall('/api/v1/crews/' + currentCrewId, 'GET', 200, 'Crew detail fetched', 180, 0.005);
-    });
-  });
-}
-
-function renderGuidesFeed() {
-  const container = document.getElementById('feedList');
-  if (!container) return;
-
-  container.innerHTML = feedGuides.map(guide => `
-    <div class="feed-card" data-guide-crew="${guide.crewId}" data-guide-title="${guide.title}">
-      <div class="feed-card-header">
-        <h4 class="feed-card-title">${guide.title}</h4>
-        <span class="feed-card-reps">${guide.reps}</span>
-      </div>
-      <div class="feed-card-route-preview">
-        <span class="feed-stop-span"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 丰储街早市</span>
-        <span class="feed-arrow-span">➔</span>
-        <span class="feed-stop-span">两来风羊肉馆</span>
-        <span class="feed-arrow-span">➔</span>
-        <span class="feed-stop-span">云龙湖</span>
-      </div>
-      <div class="feed-card-footer">
-        <span class="feed-card-author">
-          <span class="feed-author-avatar">${guide.authorAvatar}</span>
-          ${guide.author} 分享
-        </span>
-        <span class="feed-card-meta">人均参考: ${guide.cost}</span>
-      </div>
-    </div>
-  `).join('');
-
-  // 发现卡点击，跳转攻略详情页进行复刻
-  container.querySelectorAll('.feed-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const title = card.dataset.guideTitle;
-      const tcrewId = card.dataset.guideCrew;
-      
-      openGuideDetailScreen(tcrewId, title);
-    });
-  });
-}
-
-// 渲染工作空间 (页面 4)
-function renderCrewWorkspace(crew) {
-  // 顶部与基础元素
-  document.getElementById('headerCrewTitle').textContent = crew.title;
-  document.getElementById('detailCrewTitle').textContent = crew.title;
-  document.getElementById('detailCrewDate').textContent = crew.date;
-  document.getElementById('detailCrewMeta').textContent = `${crew.members.length} 人 · ${crew.startPoint}出发`;
-
-  // 1. 头像
-  const avatarsEl = document.getElementById('detailCrewMembers');
-  if (avatarsEl) {
-    avatarsEl.innerHTML = crew.members.map((m, index) => `
-      <span class="avatar ${index === 0 ? 'owner' : ''}" title="${m}">${m.charAt(0)}</span>
-    `).join('');
-  }
-
-  // 2. 地图 & 地点列表
-  drawInteractiveMap(crew);
-  renderPlacesList(crew);
-
-  // 3. AI 行程路线
-  renderItineraryStops(crew);
-
-  // 4. AA账本
-  calculateLedgerDebt(crew);
-}
-
-// 渲染地点列表 (F2 & F3)
-function renderPlacesList(crew) {
-  const container = document.getElementById('placeCardsList');
-  if (!container) return;
-
-  const currentFilter = document.querySelector('.pool-filter .filter-chip.is-active')?.dataset.filter || 'all';
-
-  let filtered = crew.places;
-  if (currentFilter === 'confirmed') filtered = crew.places.filter(p => p.status === 'confirmed');
-  if (currentFilter === 'candidate') filtered = crew.places.filter(p => p.status === 'candidate');
-
-  container.innerHTML = filtered.map(place => `
-    <div class="place-card-item" data-place-card-id="${place.id}">
-      <div class="place-info-main">
-        <div class="place-title-row">
-          <span class="place-category-tag">${place.cat}</span>
-          <span class="place-name">${place.name}</span>
-        </div>
-        <span class="place-sub-detail">${place.detail}</span>
-      </div>
-      <div class="place-actions">
-        <!-- Vote button -->
-        <div class="vote-control-row">
-          <button class="btn-vote-choice btn-vote-up" type="button" data-vote-up="${place.id}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 10v12M15 5.88L14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/></svg> ${place.votes}</button>
-        </div>
-        <button class="btn-toggle-checkin ${place.status === 'confirmed' ? 'is-done' : ''}" data-place-toggle="${place.id}">
-          ${place.status === 'confirmed' ? '已排入行程' : '+ 标记想去'}
-        </button>
-      </div>
-    </div>
-  `).join('');
-
-  // 更新计数
-  document.getElementById('totalPlacesCount').textContent = crew.places.length;
-  document.getElementById('countAll').textContent = crew.places.length;
-  document.getElementById('countConfirmed').textContent = crew.places.filter(p => p.status === 'confirmed').length;
-  document.getElementById('countCandidate').textContent = crew.places.filter(p => p.status === 'candidate').length;
-  const mapStopsCount = document.getElementById('mapStopsCount');
-  if (mapStopsCount) mapStopsCount.textContent = crew.places.filter(p => p.status === 'confirmed').length;
-
-  // 绑定投票事件
-  container.querySelectorAll('[data-vote-up]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const pid = btn.dataset.voteUp;
-      const pl = crew.places.find(p => p.id === pid);
-      if (pl) {
-        pl.votes += 1;
-        renderPlacesList(crew);
-        
-        logApiCall('/api/v1/places/vote', 'POST', 200, `Voted for ${pl.name}`, 120, 0.003);
-      }
-    });
-  });
-
-  // 标记想去/取消排入事件
-  container.querySelectorAll('[data-place-toggle]').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const pid = btn.dataset.placeToggle;
-      const pl = crew.places.find(p => p.id === pid);
-      if (pl) {
-        pl.status = pl.status === 'confirmed' ? 'candidate' : 'confirmed';
-        
-        // 自动同步更新 AI 的 Stops
-        syncPlanStops(crew);
-        renderCrewWorkspace(crew);
-        
-        logApiCall('/api/v1/places/' + pid + '/status', 'PUT', 200, `Toggled place status to ${pl.status}`, 140, 0.004);
-      }
-    });
-  });
-}
-
-// 确保已确认地点在 Itinerary Timeline 里同步更新
-function syncPlanStops(crew) {
-  const currentPlanName = crew.currentPlan;
-  const plan = crew.plans[currentPlanName];
-  if (!plan) return;
-
-  const confirmedPlaces = crew.places.filter(p => p.status === 'confirmed');
-
-  // 过滤或新增站点
-  const nextStops = [];
-  confirmedPlaces.forEach((p, idx) => {
-    const existing = plan.stops.find(s => s.id === p.id);
-    if (existing) {
-      nextStops.push(existing);
-    } else {
-      // 自动计算估算时间段
-      const startHour = 9 + idx * 3;
-      const timeStr = `${startHour.toString().padStart(2, '0')}:30`;
-      nextStops.push({
-        time: timeStr,
-        type: p.cat,
-        name: p.name,
-        detail: `系统自动规划顺路站点`,
-        votes: `${p.votes}想去`,
-        id: p.id
-      });
-    }
-  });
-
-  plan.stops = nextStops;
-}
-
-// ================= 7. AI 智能行程 (F4) ＆ 手动排序 =================
-function renderItineraryStops(crew) {
-  const timeline = document.getElementById('itineraryTimelineStops');
-  if (!timeline) return;
-
-  const currentPlanName = crew.currentPlan;
-  const plan = crew.plans[currentPlanName] || Object.values(crew.plans)[0];
-  if (!plan) {
-    timeline.innerHTML = '<p class="live-status">没有确认的行程点。请先到地点池确认加入！</p>';
-    return;
-  }
-
-  // 渲染 AI 头像与文案
-  const aiStatusText = document.querySelector('[data-ai-status]');
-  const aiCopyText = document.querySelector('[data-ai-copy]');
-  const reasonText = document.querySelector('[data-reason]');
-  const unselectedText = document.getElementById('unselectedPlaces');
-
-  if (aiStatusText) aiStatusText.textContent = crew.manualAdjusted ? '路线已被手动微调' : plan.title;
-  if (aiCopyText) aiCopyText.textContent = plan.copy;
-  if (reasonText) reasonText.textContent = plan.reason;
-  if (unselectedText) unselectedText.textContent = plan.unselected;
-
-  // 手动微调 badge
-  const badgeEl = document.getElementById('manualAdjustBadge');
-  if (badgeEl) badgeEl.style.display = crew.manualAdjusted ? 'inline' : 'none';
-
-  // 渲染 stops
-  timeline.innerHTML = plan.stops.map((stop, index) => {
-    const isFirst = index === 0;
-    const isLast = index === plan.stops.length - 1;
-    const isDone = stop.isDone ? 'is-done' : '';
-
-    return `
-      <div class="stop ${isDone}" data-stop-id="${stop.id}">
-        <span class="stop-time">${stop.time}</span>
-        <div class="stop-main" style="flex:1; margin-left: 8px;">
-          <span class="stop-type">${stop.type}</span>
-          <span class="stop-name" style="cursor:pointer;" onclick="toggleStopCheckin('${stop.id}')">${stop.name}</span>
-          <span class="stop-detail">${stop.detail}</span>
-        </div>
-        <span class="vote" style="margin-right:8px;">${stop.votes}</span>
-        
-        <!-- Reorder Arrows -->
-        <div class="stop-reorder-controls">
-          <button class="btn-reorder-arrow" type="button" onclick="moveItineraryStop(-1, ${index})" ${isFirst ? 'disabled' : ''}>▲</button>
-          <button class="btn-reorder-arrow" type="button" onclick="moveItineraryStop(1, ${index})" ${isLast ? 'disabled' : ''}>▼</button>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-// 绑定行程打卡 (F3)
-window.toggleStopCheckin = function(stopId) {
-  const crew = crews[currentCrewId];
-  const plan = crew.plans[crew.currentPlan];
-  const stop = plan.stops.find(s => s.id === stopId);
-  if (stop) {
-    stop.isDone = !stop.isDone;
-    renderItineraryStops(crew);
-    
-    const liveText = document.querySelector('[data-live-status]');
-    if (liveText) {
-      liveText.textContent = stop.isDone 
-        ? `打卡已标记！奶糖可以从「${stop.name}」直接发起记账。`
-        : '取消打卡标记。';
-    }
-
-    logApiCall('/api/v1/itinerary/checkin', 'POST', 200, `Toggled checkin for ${stop.name}`, 110, 0.003);
-  }
+const districtMap={
+ "北京市":["朝阳区","海淀区","东城区"],"上海市":["黄浦区","徐汇区","浦东新区"],"重庆市":["渝中区","江北区","沙坪坝区"],"天津市":["和平区","河西区","南开区"],
+ "大理市":["大理镇","下关街道","喜洲镇"],"成都市":["锦江区","青羊区","武侯区"],"泉州市":["鲤城区","丰泽区","洛江区"],"阿勒泰地区":["阿勒泰市","布尔津县","哈巴河县"],
+ "杭州市":["西湖区","上城区","余杭区"],"厦门市":["思明区","湖里区","集美区"],"青岛市":["市南区","崂山区","黄岛区"],"西安市":["碑林区","雁塔区","莲湖区"]
 };
-
-// 向上/下移动站点 (F4 手动排序)
-window.moveItineraryStop = function(direction, index) {
-  const crew = crews[currentCrewId];
-  const plan = crew.plans[crew.currentPlan];
-  const stops = plan.stops;
-
-  if (direction === -1 && index > 0) {
-    // 向上移动
-    const temp = stops[index];
-    stops[index] = stops[index - 1];
-    stops[index - 1] = temp;
-  } else if (direction === 1 && index < stops.length - 1) {
-    // 向下移动
-    const temp = stops[index];
-    stops[index] = stops[index + 1];
-    stops[index + 1] = temp;
-  }
-
-  // 交换完毕后，标记已手动微调，重绘地图和 timeline
-  crew.manualAdjusted = true;
-  
-  // 调整地图上的顺序 coordinates
-  const newPlacesOrder = [];
-  stops.forEach(st => {
-    const pl = crew.places.find(p => p.id === st.id);
-    if (pl) newPlacesOrder.push(pl);
-  });
-  // 将没有排入的 candidate 依旧附在最后
-  crew.places.forEach(pl => {
-    if (pl.status !== 'confirmed') newPlacesOrder.push(pl);
-  });
-  crew.places = newPlacesOrder;
-
-  renderCrewWorkspace(crew);
-  
-  logApiCall('/api/v1/itinerary/reorder', 'POST', 200, `Manually swapped stop index ${index}`, 160, 0.004);
-};
-
-// 重新排一排按钮逻辑
-function triggerAiReplan(customPrompt = '') {
-  const replanBtn = document.querySelector('[data-replan]');
-  if (replanBtn) replanBtn.disabled = true;
-
-  const statusText = document.querySelector('[data-ai-status]');
-  statusText.textContent = customPrompt ? `正在按要求“${customPrompt}”重排...` : '芝士正在核对大家的投票和路线...';
-
-  // 1秒后模拟 AI 运算返回
-  setTimeout(() => {
-    const crew = crews[currentCrewId];
-    
-    // 清除手动修改标记
-    crew.manualAdjusted = false;
-
-    // 关键词简易匹配
-    if (customPrompt.includes('多睡') || customPrompt.includes('迟')) {
-      // 延迟时间
-      const plan = crew.plans[crew.currentPlan];
-      plan.stops.forEach(st => {
-        const [h, m] = st.time.split(':');
-        st.time = `${(parseInt(h) + 1).toString().padStart(2,'0')}:${m}`;
-      });
-      plan.copy = '考虑到大家想要多睡一小时，芝士自动将出发时间顺延至上午 10:40。';
-      logApiCall('/api/v1/itinerary/generate', 'POST', 200, 'AI shifted timeline based on sleep constraint', 1450, 0.045);
-    } else if (customPrompt.includes('甜品') || customPrompt.includes('糖')) {
-      const plan = crew.plans[crew.currentPlan];
-      // 插入一个甜品点
-      if (!plan.stops.some(s => s.name.includes('甜品'))) {
-        plan.stops.splice(2, 0, {
-          time: '16:00',
-          type: '甜品',
-          name: '蜜雪冰城/徐州传统糕点',
-          detail: '下午补充能量甜点，打车路上顺路',
-          votes: '5想去',
-          id: 'temp-dessert'
-        });
-      }
-      plan.copy = '已在午饭后、傍晚散步前插入大家高票通过的传统甜品店。';
-      logApiCall('/api/v1/itinerary/generate', 'POST', 200, 'AI inserted dessert stop stop', 1520, 0.048);
-    } else if (customPrompt.includes('东站') || customPrompt.includes('高铁')) {
-      // 切换为高铁友好路线
-      crew.currentPlan = 'easy';
-      logApiCall('/api/v1/itinerary/generate', 'POST', 200, 'AI switched plan to easy-trail (高铁友好)', 1380, 0.042);
-    } else {
-      // 默认切换
-      crew.currentPlan = crew.currentPlan === 'food' ? 'easy' : 'food';
-      logApiCall('/api/v1/itinerary/generate', 'POST', 200, 'AI re-evaluated distance and votes route', 1240, 0.038);
-    }
-
-    renderCrewWorkspace(crew);
-    if (replanBtn) replanBtn.disabled = false;
-  }, 1200);
+const districts=city=>districtMap[city]||["市中心","近郊","其他区域"];
+function parseDate(v){return new Date(v+"T00:00:00")}
+function formatDate(v){const d=parseDate(v);return (d.getMonth()+1)+"月"+d.getDate()+"日"}
+function tripDayCount(start=guide.start,end=guide.end){return Math.max(1,Math.floor((parseDate(end)-parseDate(start))/86400000)+1)}
+function dayDateLabel(start,day){const d=parseDate(start);d.setDate(d.getDate()+day-1);return (d.getMonth()+1)+"月"+d.getDate()+"日"}
+function endDateFromDays(start,days){const d=parseDate(start);d.setDate(d.getDate()+days-1);const pad=n=>String(n).padStart(2,"0");return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+function fillStopDayOptions(selected=1){const count=tripDayCount();$("#editStopDay").innerHTML=Array.from({length:count},(_,i)=>'<option value="'+(i+1)+'">Day '+(i+1)+' · '+dayDateLabel(guide.start,i+1)+'</option>').join("");$("#editStopDay").value=Math.min(Math.max(+selected||1,1),count)}
+function buildPublicStops(item){
+ const names=[item.city+"老城","当地早市","山海观景台","街巷午餐","日落散步线","在地小馆","文化展馆","湖畔咖啡","返程伴手礼","特色村落","夜间市集","自然步道","公路驿站","观景营地"],times=["09:00","11:30","15:30","18:30"];
+ return Array.from({length:item.places},(_,i)=>({day:Math.min(item.days,Math.floor(i*item.days/item.places)+1),time:times[i%times.length],name:names[i]||item.city+"推荐地点 "+(i+1),desc:i%3===0?"建议停留 2 小时 · 公开路线节点":i%3===1?"顺路安排 · 步行可达":"适合拍照 · 注意营业时间",tag:i%3===1?"吃 · 当地推荐":"游 · 路线精选",duration:i%3===0?"2.5 小时":"1.5 小时"}))
+}
+function feedCard(x){return '<button class="feed-card" data-feed-city="'+x.city+'"><span class="feed-cover '+x.color+'"><span class="match">AI 匹配 '+x.match+'%</span><strong>'+x.city+'</strong></span><span class="feed-body"><h3>'+x.title+'</h3><span class="feed-meta"><span><i data-lucide="heart"></i>'+x.likes+'</span><span>'+x.uses+' 人套用 · '+x.tag+'</span></span></span></button>'}
+function renderFeed(data,target){target=target||"#feedGrid";$(target).innerHTML=data.length?data.map(feedCard).join(""):'<div class="search-empty"><i data-lucide="map-search"></i><strong>没有找到相关行程</strong><span>换个目的地或玩法试试</span></div>';icons()}
+function showView(name){
+ $$(".view").forEach(v=>v.classList.toggle("active",v.dataset.view===name));
+ $(".bottom-nav").classList.toggle("hidden",["auth","trip","search","settings","publicTrip"].includes(name));
+ $$("[data-nav]").forEach(b=>b.classList.toggle("active",b.dataset.nav===name));
+ if(name==="trip")renderTrip();if(name==="profile")renderProfile("owned");if(name==="settings")renderCredits();icons()
+}
+function renderPublicTrip(){
+ const item=currentPublicTrip||feedData[0];currentPublicStops=buildPublicStops(item);
+ $("#publicHeaderTitle").textContent=item.title;$("#publicCity").textContent=item.city;$("#publicTitle").textContent=item.title;$("#publicMatch").textContent="AI 匹配 "+item.match+"%";$("#publicMeta").textContent=item.uses+" 人套用 · "+item.likes+" 次点赞";
+ $("#publicDistance").textContent=item.distance;$("#publicMapDays").textContent=item.days;$("#publicPlaceBadge").textContent=item.places;$("#publicDayBadge").textContent=item.days+"天";$("#publicOverviewDays").textContent=item.days+" 天";$("#publicOverviewPlaces").textContent=item.places+" 处";$("#publicDateRange").textContent=formatDate(item.start)+"起 · 共 "+item.days+" 天";
+ $("#publicPlaceOverview").innerHTML=currentPublicStops.map((s,i)=>'<article class="public-place-row"><span><i data-lucide="'+(i%3===1?"utensils":"map-pin")+'"></i></span><div><strong>'+s.name+'</strong><p>Day '+s.day+' · '+s.desc+'</p></div></article>').join("");
+ $("#publicTimeline").innerHTML=Array.from({length:item.days},(_,d)=>{const day=d+1,rows=currentPublicStops.map((s,i)=>({...s,index:i})).filter(s=>s.day===day);return '<section class="public-day-group"><header><span>DAY '+day+'</span><div><strong>'+dayDateLabel(item.start,day)+'</strong><small>'+rows.length+' 个地点</small></div></header><div class="public-day-stops">'+rows.map((s,i)=>'<article class="public-stop"><span>'+(i+1)+'</span><div><small>'+s.time+'</small><strong>'+s.name+'</strong><p>'+s.desc+'</p></div></article>').join("")+'</div></section>'}).join("");
+ icons()
+}
+function switchPublicDrawer(name,expand=true){$$("[data-public-drawer-tab]").forEach(b=>b.classList.toggle("active",b.dataset.publicDrawerTab===name));$$("[data-public-drawer-panel]").forEach(p=>p.classList.toggle("active",p.dataset.publicDrawerPanel===name));if(expand)$("#publicMapDrawer").classList.add("expanded");icons()}
+function openPublicTrip(city){
+ const item=feedData.find(x=>x.city===city)||feedData[0],active=$(".view.active");
+ publicReturnView=active&&["home","search","profile"].includes(active.dataset.view)?active.dataset.view:"home";currentPublicTrip=item;renderPublicTrip();$("#publicMapDrawer").classList.remove("expanded");switchPublicDrawer("overview",false);showView("publicTrip")
+}
+function openSheet(id){$$(".sheet").forEach(s=>s.classList.toggle("active",s.id===id));$("#sheetOverlay").classList.add("visible");icons()}
+function closeSheet(){$("#sheetOverlay").classList.remove("visible");$$(".sheet").forEach(s=>s.classList.remove("active"))}
+function toast(message){$("#toast span").textContent=message;$("#toast").classList.add("visible");clearTimeout(toast.timer);toast.timer=setTimeout(()=>$("#toast").classList.remove("visible"),1800)}
+function renderPlaces(){
+ $("#placeList").innerHTML=places.map((p,i)=>'<article class="place-item" data-place-index="'+i+'"><span class="place-icon"><i data-lucide="'+p.icon+'"></i></span><div class="place-copy"><strong>'+p.name+'</strong><p>'+p.desc+'</p><div class="place-tags"><span>'+p.type+'</span><span>'+(p.source||'成员添加')+'</span></div></div><button class="place-vote" data-vote="'+i+'"><i data-lucide="thumbs-up"></i>'+p.votes+'</button></article>').join("");
+ $("#placeBadge").textContent=places.length;$("#homePlaceCount").textContent=places.length;
+ $$(".pin").forEach((p,i)=>p.hidden=i>=places.length);updatePlanGate();icons()
+}
+function updatePlanGate(){
+ const count=places.length,hasPlaces=count>=3,hasCredits=credits>=20,hasQuota=aiUses<5&&dailyAiUses<3,ok=hasPlaces&&hasCredits&&hasQuota;$("#generate").disabled=!ok;
+ $("#gateTitle").textContent=!hasPlaces?"还差 "+(3-count)+" 个地点":!hasCredits?"积分不足，暂不可规划":!hasQuota?"AI 次数已达上限":"已满足规划条件";
+ $("#gateHint").textContent="已添加 "+count+" / 3 个地点";
+ $("#mapStat strong").textContent=itineraryGenerated?"27km · 预计 1h12m":"待规划";
+ $("#mapStat span").textContent=itineraryGenerated?"路线已避开折返":"已收藏 "+count+" 个地点";
+}
+function stopCardHtml(s,i){return '<article class="stop-card" draggable="true" data-stop-index="'+i+'" data-stop-day="'+s.day+'"><time class="stop-time">'+s.time+'</time><div class="stop-main"><strong>'+s.name+'</strong><p>'+s.desc+'</p><span>'+s.tag+'</span></div><div class="stop-actions"><button data-edit-stop="'+i+'" title="编辑节点"><i data-lucide="pencil"></i></button><button class="drag-handle" title="拖拽排序"><i data-lucide="grip-vertical"></i></button></div></article>'}
+function renderTimeline(){
+ const count=tripDayCount();stops=stops.map(s=>({...s,day:Math.min(Math.max(+s.day||1,1),count)}));$("#timeline").className="timeline day-timeline";
+ $("#timeline").innerHTML=Array.from({length:count},(_,d)=>{const day=d+1,rows=stops.map((s,i)=>({...s,index:i})).filter(s=>s.day===day);return '<section class="trip-day-group"><header><span>DAY '+day+'</span><div><strong>'+dayDateLabel(guide.start,day)+'</strong><small>'+rows.length+' 个行程节点</small></div><button data-add-stop-day="'+day+'" title="在这一天添加地点"><i data-lucide="plus"></i></button></header><div class="trip-day-stops">'+(rows.length?rows.map(s=>stopCardHtml(s,s.index)).join(""):'<button class="day-empty" data-add-stop-day="'+day+'"><i data-lucide="calendar-plus"></i>这一天还没有安排，手动添加</button>')+'</div></section>'}).join("");
+ $("#itineraryBadge").textContent=stops.length;bindDrag();icons()
+}
+function renderTrip(){
+ const count=tripDayCount();$("#tripGuideName").textContent=guide.name;$("#homeGuideName").textContent=guide.name;
+ $("#tripMeta").textContent=formatDate(guide.start)+" - "+formatDate(guide.end)+" · "+guide.city;$("#tripDaySummary").textContent=formatDate(guide.start)+"起 · 共 "+count+" 天";
+ $("#itineraryEmpty").style.display=itineraryGenerated?"none":"block";
+ $("#itineraryReady").classList.toggle("visible",itineraryGenerated);
+ renderPlaces();renderTimeline();renderExpenses();renderSettlement()
+}
+function openStopEditor(index=-1,day=1){
+ const editing=index>=0,s=editing?stops[index]:{day,time:"09:00",name:"",desc:"",duration:"1.5 小时"};$("#editStopIndex").value=index;fillStopDayOptions(s.day);$("#editStopTime").value=s.time;$("#editStopName").value=s.name;$("#editStopDesc").value=s.desc;$("#editStopDuration").value=s.duration;$("#editStopKicker").textContent=editing?"编辑行程节点":"手动创建行程";$("#editStopTitle").textContent=editing?"调整日期和停留信息":"安排到旅行中的哪一天？";$("#saveStopButton").textContent=editing?"保存节点修改":"添加到行程";openSheet("editStop")
+}
+function switchDrawer(name){
+ $$("[data-drawer-tab]").forEach(b=>b.classList.toggle("active",b.dataset.drawerTab===name));
+ $$("[data-drawer-panel]").forEach(p=>p.classList.toggle("active",p.dataset.drawerPanel===name));
+ $("#mapDrawer").classList.add("expanded");icons()
+}
+function bindDrag(){
+ $$(".stop-card").forEach(card=>{
+  card.addEventListener("dragstart",()=>{dragIndex=+card.dataset.stopIndex;card.classList.add("dragging")});
+  card.addEventListener("dragend",()=>{dragIndex=null;card.classList.remove("dragging")});
+  card.addEventListener("dragover",e=>e.preventDefault());
+  card.addEventListener("drop",e=>{e.preventDefault();const to=+card.dataset.stopIndex;if(dragIndex===null||to===dragIndex)return;const moved=stops.splice(dragIndex,1)[0];moved.day=+card.dataset.stopDay||moved.day;stops.splice(to,0,moved);renderTimeline();toast("行程日期与顺序已更新")})
+ })
+}
+function generateItinerary(){
+ if(places.length<3){toast("至少添加 3 个地点后才能规划");return}
+ $("#loading").classList.add("visible");let pct=18,step=0;
+ const messages=["检查营业时间与地点距离","参考成员投票与停留偏好","正在规避折返与高峰路段","整理可编辑的日程卡片"];
+ clearInterval(loadingTimer);loadingTimer=setInterval(()=>{
+  pct=Math.min(96,pct+Math.ceil(Math.random()*18));step=Math.min(messages.length-1,step+1);
+  $("#loadingBar").style.width=pct+"%";$("#loadingPct").textContent=pct+"%";$("#loadingText").textContent=messages[step];
+  if(pct>=96){clearInterval(loadingTimer);setTimeout(()=>{
+   if(!stops.length){const times=["09:30","12:20","15:00"];stops=places.map((p,i)=>({day:1,time:times[i%times.length],name:p.name,desc:p.desc,tag:p.type+" · 成员共同收藏",duration:i%3===1?"1.5 小时":"2.5 小时"}))}
+   const dayCount=tripDayCount();stops=stops.map((s,i)=>({...s,day:Math.min(dayCount,Math.floor(i*dayCount/Math.max(stops.length,1))+1)}));
+   if(!spendCredits(20,"AI 行程规划")){$("#loading").classList.remove("visible");return}
+   itineraryGenerated=true;$("#loading").classList.remove("visible");$("#loadingBar").style.width="18%";$("#loadingPct").textContent="18%";
+   renderTrip();switchDrawer("itinerary");toast("行程已生成，可继续编辑和拖拽")
+  },450)}
+ },420)
+}
+function renderExpenses(){
+ $("#expenses").innerHTML=expenses.map(e=>'<article class="expense-item"><span class="expense-icon"><i data-lucide="'+e.icon+'"></i></span><div><strong>'+e.name+'</strong><p>'+e.payer+' 垫付 · '+e.split+'</p></div><span class="expense-amount">¥'+e.amount.toFixed(2)+'</span></article>').join("");
+ $("#total").textContent="¥ "+expenses.reduce((a,b)=>a+b.amount,0).toLocaleString("zh-CN",{minimumFractionDigits:2});
+ $("#expenseCount").textContent=expenses.length;icons()
+}
+function renderSettlement(){
+ $("#settlementPlaceholder").style.display=settlementGenerated?"none":"block";
+ $("#settlementResult").classList.toggle("visible",settlementGenerated);
+ $("#settlementVersion").textContent="基于 "+expenses.length+" 笔账单生成";
+ const rows=[{from:"小乔",to:"晶晶",amount:"¥168.50",a:"乔",b:"景"},{from:"林一",to:"阿豪",amount:"¥74.00",a:"林",b:"豪"}];
+ $("#transfers").innerHTML=rows.map(t=>'<div class="transfer"><span class="transfer-person"><b>'+t.a+'</b>'+t.from+'</span><span class="transfer-arrow">→</span><span class="transfer-person"><b>'+t.b+'</b>'+t.to+'</span><strong class="transfer-amount">'+t.amount+'</strong></div>').join("");icons()
+}
+function switchAA(stage){$$("[data-aa-stage]").forEach(b=>b.classList.toggle("active",b.dataset.aaStage===stage));$$("[data-aa-panel]").forEach(p=>p.classList.toggle("active",p.dataset.aaPanel===stage));icons()}
+function invalidateSettlement(){if(settlementGenerated){settlementGenerated=false;renderSettlement();toast("账单已变化，请重新生成结算")}}
+function renderProfile(kind){
+ const list=kind==="owned"?ownedGuides:kind==="joined"?joinedGuides:feedData.slice(1,6);
+ $("#profileList").innerHTML=list.map(x=>{
+  if(kind==="saved")return '<article class="profile-guide-card"><button class="profile-guide-main" data-feed-city="'+x.city+'"><span class="profile-item-cover '+x.color+'">'+x.city+'</span><span class="profile-guide-copy"><span class="guide-status saved"><i data-lucide="bookmark"></i>已收藏</span><h3>'+x.title+'</h3><p>'+x.uses+' 人套用 · '+x.likes+' 次点赞</p><span class="guide-foot">'+x.tag+' · 来自公开广场</span></span><i data-lucide="chevron-right"></i></button></article>';
+  const published=x.status==="published",status=published?"已发布":"私密共创",statusIcon=published?"globe-2":"lock-keyhole";
+  const action=kind==="owned"&&!published?'<button class="publish-action" data-publish-guide="'+x.id+'"><i data-lucide="send"></i>发布</button>':'<span class="guide-role">'+(kind==="owned"?"我创建":"我加入")+'</span>';
+  return '<article class="profile-guide-card"><button class="profile-guide-main" data-open-trip><span class="profile-item-cover '+x.color+'">'+x.city+'</span><span class="profile-guide-copy"><span class="guide-status '+x.status+'"><i data-lucide="'+statusIcon+'"></i>'+status+'</span><h3>'+x.title+'</h3><p>'+x.places+' 个地点 · '+x.members+' 位成员</p><span class="guide-foot">'+x.updated+'</span></span><i data-lucide="chevron-right"></i></button><div class="profile-guide-actions"><span>'+ (published?"公开广场所有人可见":"仅受邀成员可见") +'</span>'+action+'</div></article>'
+ }).join("");icons()
+}
+function applyTheme(theme){
+ document.documentElement.dataset.theme=theme;
+ $$("[data-theme-choice]").forEach(button=>button.classList.toggle("active",button.dataset.themeChoice===theme));
+ try{localStorage.setItem("crew-theme",theme)}catch{}
+ icons()
+}
+function initRegions(){
+ const province=$("#provincePicker"),city=$("#cityPicker"),district=$("#districtPicker");
+ province.innerHTML=Object.keys(regionCities).map(x=>"<option>"+x+"</option>").join("");
+ function fillCities(selected){city.innerHTML=regionCities[selected].map(x=>"<option>"+x+"</option>").join("");fillDistricts(city.value)}
+ function fillDistricts(selected){district.innerHTML=districts(selected).map(x=>"<option>"+x+"</option>").join("")}
+ province.addEventListener("change",()=>fillCities(province.value));city.addEventListener("change",()=>fillDistricts(city.value));
+ window.setRegion=(p,c,d)=>{p=p==="云南"?"云南省":p;province.value=p;fillCities(p);city.value=c;fillDistricts(c);district.value=d};
+ setRegion(guide.province,guide.city,guide.district)
+}
+function renderCandidates(term){
+ term=term||"";const list=candidates.filter(x=>!term||x.name.includes(term)||x.desc.includes(term));
+ $("#placeCandidates").innerHTML=list.map(p=>'<article class="candidate"><div><strong>'+p.name+'<span class="candidate-distance">距你 '+(400+candidates.indexOf(p)*260)+'m</span></strong><p>'+p.desc+'</p></div><button data-review-candidate="'+candidates.indexOf(p)+'">编辑添加</button></article>').join("");
+ if(!list.length)$("#placeCandidates").innerHTML='<div class="search-empty"><i data-lucide="map-search"></i><strong>没有直接匹配</strong><span>换个关键词，或使用链接识别批量导入</span></div>';icons()
 }
 
-// ================= 8. AA 账本与最少债务化简 (F5) =================
-function calculateLedgerDebt(crew) {
-  const memberPaid = {};
-  const memberOwed = {};
-  
-  // 初始化每个成员
-  crew.members.forEach(m => {
-    memberPaid[m] = 0;
-    memberOwed[m] = 0;
-  });
-
-  let totalExpense = 0;
-
-  // 1. 遍历计算 paid & owed
-  crew.expenses.forEach(exp => {
-    totalExpense += exp.amount;
-    memberPaid[exp.payer] = (memberPaid[exp.payer] || 0) + exp.amount;
-
-    const count = exp.participants.length || crew.members.length;
-    const share = exp.amount / count;
-    exp.participants.forEach(p => {
-      memberOwed[p] = (memberOwed[p] || 0) + share;
-    });
-  });
-
-  // 2. 算每个人净额 (Paid - Owed)
-  const netBalances = {};
-  crew.members.forEach(m => {
-    netBalances[m] = Math.round((memberPaid[m] - memberOwed[m]) * 100) / 100;
-  });
-
-  // 3. 渲染总消费和人均
-  document.getElementById('statTotalExpense').textContent = `￥${Math.round(totalExpense)}`;
-  document.getElementById('statAvgExpense').textContent = `￥${Math.round(totalExpense / crew.members.length)}`;
-  document.getElementById('expenseCount').textContent = crew.expenses.length;
-
-  // 预算进度条更新
-  const budgetTotal = 1800;
-  const budgetUsed = Math.round(totalExpense);
-  const budgetPct = Math.min(100, Math.round(budgetUsed / budgetTotal * 100));
-  const budgetUsedEl = document.getElementById('budgetUsed');
-  const budgetTotalEl = document.getElementById('budgetTotal');
-  const budgetFillEl = document.getElementById('budgetBarFill');
-  if (budgetUsedEl) budgetUsedEl.textContent = budgetUsed.toLocaleString();
-  if (budgetTotalEl) budgetTotalEl.textContent = budgetTotal.toLocaleString();
-  if (budgetFillEl) budgetFillEl.style.width = budgetPct + '%';
-
-  // 4. 渲染明细列表（带圆形分类图标 + 垃圾桶删除）
-  const catIcons = {
-    '午饭': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18M5 11v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V11M9 11V7a3 3 0 0 1 6 0v4"/></svg>',
-    '晚饭': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1M6 8h12v9a4 4 0 0 1-4 4H10a4 4 0 0 1-4-4V8z"/></svg>',
-    '早餐': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 13h12M6 13V8a6 6 0 0 1 12 0v5M8 13v4a4 4 0 0 0 8 0v-4"/></svg>',
-    '交通': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 17H3v-6l2-5h12l2 5v6h-2M5 17a2 2 0 1 0 4 0M15 17a2 2 0 1 0 4 0"/></svg>',
-    '娱乐': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-    '零食': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-    'default': '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'
-  };
-  const catColors = {
-    '午饭': 'var(--ochre)', '晚饭': 'var(--mauve)', '早餐': 'var(--sage)',
-    '交通': 'var(--teal)', '娱乐': 'var(--clay)', '零食': 'var(--accent)'
-  };
-
-  const expenseListEl = document.getElementById('expenseList');
-  if (expenseListEl) {
-    expenseListEl.innerHTML = crew.expenses.map(exp => {
-      const icon = catIcons[exp.place] || catIcons['default'];
-      const catColor = catColors[exp.place] || 'var(--ink-soft)';
-      return `
-      <div class="expense-item">
-        <div class="exp-icon-circle" style="background: ${catColor}20; color: ${catColor};">
-          ${icon}
-        </div>
-        <div class="exp-main">
-          <span class="exp-title">${exp.title}</span>
-          <span class="exp-detail">${exp.payer} 垫付 · ${exp.participants.length} 人均分</span>
-        </div>
-        <div class="exp-right">
-          <span class="exp-amount">￥${exp.amount.toFixed(0)}</span>
-          <button class="btn-delete-expense" type="button" title="删除此账单" onclick="deleteExpenseItem('${exp.id}')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
-        </div>
-      </div>
-    `;
-    }).join('');
-  }
-
-  // 5. 渲染净额 Pill
-  const netEl = document.getElementById('memberNetBalances');
-  if (netEl) {
-    netEl.innerHTML = crew.members.map(m => {
-      const net = netBalances[m];
-      const isPos = net > 0;
-      const isNeg = net < 0;
-      const cls = isPos ? 'positive' : (isNeg ? 'negative' : '');
-      const prefix = isPos ? '应收 +' : (isNeg ? '应付 ' : '已平 ');
-      return `<span class="net-pill ${cls}">${m}: ${prefix}￥${Math.abs(net).toFixed(2)}</span>`;
-    }).join('');
-  }
-
-  // 6. 债务化简 (Greedy 对冲算法)
-  const debtors = [];
-  const creditors = [];
-
-  Object.keys(netBalances).forEach(m => {
-    const bal = netBalances[m];
-    if (bal < -0.01) debtors.push({ name: m, amount: -bal });
-    else if (bal > 0.01) creditors.push({ name: m, amount: bal });
-  });
-
-  const transfers = [];
-  let i = 0, j = 0;
-  while (i < debtors.length && j < creditors.length) {
-    const debtor = debtors[i];
-    const creditor = creditors[j];
-
-    const amount = Math.min(debtor.amount, creditor.amount);
-    transfers.push({
-      from: debtor.name,
-      to: creditor.name,
-      amount: Math.round(amount * 100) / 100,
-    });
-
-    debtor.amount -= amount;
-    creditor.amount -= amount;
-
-    if (debtor.amount < 0.01) i++;
-    if (creditor.amount < 0.01) j++;
-  }
-
-  // 7. 渲染建议
-  const transferListEl = document.getElementById('transferList');
-  if (transferListEl) {
-    if (transfers.length === 0) {
-      transferListEl.innerHTML = '<li>🎉 账目已完全清算，无需转账！</li>';
-    } else {
-      transferListEl.innerHTML = transfers.map(t => `
-        <li><strong>${t.from}</strong> 需转给 <strong>${t.to}</strong> <strong>￥${t.amount.toFixed(2)}</strong></li>
-      `).join('');
-    }
-  }
+function renderCredits(){
+ const runs=Math.floor(credits/20),percent=Math.min(100,aiUses/5*100);
+ ["#creditBalance","#creditBalanceSettings","#linkCreditBalance"].forEach(s=>{if($(s))$(s).textContent=credits});
+ if($("#creditRuns"))$("#creditRuns").textContent=runs;
+ if($("#aiUseCount"))$("#aiUseCount").textContent=aiUses;
+ if($("#monthUseSettings"))$("#monthUseSettings").textContent=aiUses;
+ if($("#todayUseSettings"))$("#todayUseSettings").textContent=dailyAiUses;
+ if($("#quotaTrack"))$("#quotaTrack").style.width=percent+"%";
+ updatePlanGate()
 }
-
-// 删除消费项目 (F5)
-window.deleteExpenseItem = function(expId) {
-  const crew = crews[currentCrewId];
-  const idx = crew.expenses.findIndex(e => e.id === expId);
-  if (idx !== -1) {
-    const expName = crew.expenses[idx].title;
-    crew.expenses.splice(idx, 1);
-    calculateLedgerDebt(crew);
-    
-    logApiCall('/api/v1/expenses/' + expId, 'DELETE', 200, `Deleted expense "${expName}"`, 110, 0.002);
-  }
-};
-
-// ================= 9. OCR 与链接解析模拟器 (F2) =================
-function handleSimulatedOcr() {
-  const laser = document.getElementById('ocrLaser');
-  const ocrScanningStatus = document.getElementById('ocrScanningStatus');
-  const ocrResultPreview = document.getElementById('ocrResultPreview');
-  const ocrDropzone = document.getElementById('ocrDropzone');
-
-  if (!laser || !ocrScanningStatus || !ocrResultPreview) return;
-
-  // 开始扫描动效
-  laser.style.display = 'block';
-  ocrScanningStatus.style.display = 'flex';
-  ocrResultPreview.style.display = 'none';
-
-  logApiCall('/api/v1/ocr', 'POST', 'SCANNING', 'Laser scan started for screenshot', 256, 0.002);
-
-  // 1.5 秒后完成
-  setTimeout(() => {
-    laser.style.display = 'none';
-    ocrScanningStatus.style.display = 'none';
-    ocrResultPreview.style.display = 'block';
-
-    logApiCall('/api/v1/ocr', 'POST', 200, 'OCR parsed successfully', 512, 0.005);
-    logApiCall('/api/v1/poi/search', 'GET', 200, 'Matched 1 POI candidate from OCR string', 120, 0.002);
-  }, 1500);
+function spendCredits(amount,label){
+ if(label==="AI 行程规划"&&(aiUses>=5||dailyAiUses>=3)){toast("AI 次数已达上限，明天再来");return false}
+ if(credits<amount){toast("积分不足，发布公开攻略可获得积分");return false}
+ credits-=amount;if(label==="AI 行程规划"){aiUses++;dailyAiUses++;}
+ if($("#latestPointLog"))$("#latestPointLog").textContent=label+" -"+amount+" 分";
+ renderCredits();return true
 }
-
-function handleLinkParse() {
-  const linkInput = document.getElementById('linkPasteInput');
-  const linkLoadingStatus = document.getElementById('linkLoadingStatus');
-  if (!linkInput || !linkLoadingStatus) return;
-
-  const val = linkInput.value.trim();
-  if (!val) return;
-
-  linkLoadingStatus.style.display = 'block';
-
-  // 1秒后模拟解析成功
-  setTimeout(() => {
-    linkLoadingStatus.style.display = 'none';
-    
-    // 新增地点
-    const crew = crews[currentCrewId];
-    const newPl = {
-      id: `p_${Date.now()}`,
-      name: '链接定位地锅鸡',
-      cat: '午饭',
-      detail: '从粘贴的链接溯源，经高德 POI 补全成功',
-      votes: 1,
-      status: 'candidate',
-      x: 100 + Math.random() * 100,
-      y: 40 + Math.random() * 100
-    };
-    crew.places.push(newPl);
-    
-    linkInput.value = '';
-    
-    // 退回
-    PageRouter.back();
-    
-    logApiCall('/api/v1/places/link-parse', 'POST', 200, `Parsed link and auto-created place: ${newPl.name}`, 480, 0.012);
-  }, 1000);
+function switchPlaceMode(mode){
+ $$("[data-place-mode]").forEach(b=>b.classList.toggle("active",b.dataset.placeMode===mode));
+ $$("[data-place-mode-panel]").forEach(p=>p.classList.toggle("active",p.dataset.placeModePanel===mode));icons()
 }
-
-// ================= 10. 攻略详情与一键复刻 (F7) =================
-function openGuideDetailScreen(tcrewId, guideTitle) {
-  const crew = crews[tcrewId] || crews['crew1'];
-  
-  // 填充预览界面
-  const titleEl = document.getElementById('guidePreviewTitle');
-  if (titleEl) titleEl.textContent = guideTitle;
-
-  renderGuideRoutePreview(crew);
-
-  // 攻略复刻表单初始化默认值
-  document.getElementById('repCrewTitle').value = `克隆自_${crew.title}`;
-
-  // 打开页面
-  PageRouter.navigateTo('page-guide-detail');
-
-  logApiCall('/api/v1/guide/snapshot/' + tcrewId, 'GET', 200, 'Guide snapshot loaded', 140, 0.003);
+function openPlaceEditor(place,source){
+ currentPlaceDraft={...place,source:source||""};selectedPlaceType=place.type||"游";
+ $("#placeEditorName").value=place.name||"";$("#placeEditorAddress").value=place.address||place.desc||"大理市 · 地图 POI 待确认";
+ $("#placeEditorNote").value=place.note||place.desc||"";$("#placeEditorSource").value=source||"";
+ $$("[data-place-type]").forEach(b=>b.classList.toggle("active",b.dataset.placeType===selectedPlaceType));openSheet("placeEditor")
 }
-
-function renderGuideRoutePreview(crew) {
-  const container = document.getElementById('guideRoutePreview');
-  if (!container) return;
-
-  const showStops = document.getElementById('chkShowStops').checked;
-  const showVotes = document.getElementById('chkShowVotes').checked;
-  const showBudget = document.getElementById('chkShowBudget').checked;
-
-  let htmlLines = [];
-
-  const confirmed = crew.places.filter(p => p.status === 'confirmed');
-
-  if (showStops) {
-    confirmed.forEach((place, index) => {
-      const voteHtml = showVotes ? ` (${place.votes}人想去)` : '';
-      htmlLines.push(`<div class="guide-step"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 第${index+1}站: ${place.name}${voteHtml}</div>`);
-      if (index < confirmed.length - 1) {
-        htmlLines.push(`<div class="guide-arrow"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M19 12l-7 7-7-7"/></svg> 顺路前行约 15 分钟</div>`);
-      }
-    });
-  } else {
-    htmlLines.push('<div class="guide-step"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 路线及顺序打卡已设为私密</div>');
-  }
-
-  if (showBudget) {
-    htmlLines.push(`<div class="guide-budget-pill" style="margin-top:10px; font-weight:700; color:var(--coral-deep); font-size:12px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> 团队参考人均: ￥${crew.budgetRange} 元</div>`);
-  }
-
-  container.innerHTML = htmlLines.join('');
+function renderExtractedPlaces(){
+ $("#extractedPlaces").innerHTML=extractedPlaces.map((p,i)=>'<label class="extracted-item"><input class="extracted-check" type="checkbox" data-import-index="'+i+'" checked><span><strong>'+p.name+'</strong><p>'+p.desc+'</p></span><b class="confidence">'+p.confidence+'% 匹配</b></label>').join("");
+ updateSelectedImportCount();icons()
 }
-
-// 触发攻略发布
-function handlePublishGuide() {
-  const crew = crews[currentCrewId];
-  
-  // 将攻略圈追加一条记录
-  const guideId = `guide_${Date.now()}`;
-  const newGuide = {
-    id: guideId,
-    title: `${crew.title}实战吃逛攻略`,
-    author: '张三',
-    authorAvatar: '张',
-    cost: `￥${crew.budgetRange}`,
-    reps: '0次复刻',
-    crewId: crew.id
-  };
-
-  feedGuides.unshift(newGuide);
-  renderGuidesFeed();
-
-  // 弹出提示并跳转
-  alert('攻略发布成功！已对外生成私密分享卡片并推送至“攻略圈”。');
-  
-  // 重绘并打开该详情
-  openGuideDetailScreen(crew.id, newGuide.title);
-
-  logApiCall('/api/v1/guide/publish', 'POST', 200, `Published guide snapshot for ${crew.title}`, 980, 0.032);
+function updateSelectedImportCount(){
+ if($("#selectedImportCount"))$("#selectedImportCount").textContent=$$(".extracted-check:checked").length
 }
-
-// 攻略复刻执行
-function handleReplicateAction(event) {
-  event.preventDefault();
-  
-  // 从原局中克隆所有的地点
-  const origCrew = crews[currentCrewId];
-  const newTitle = document.getElementById('repCrewTitle').value;
-  const newDate = document.getElementById('repCrewDate').value;
-  const newMembersCount = parseInt(document.getElementById('repCrewMembers').value) || 5;
-
-  const newCrewId = `crew_${Date.now()}`;
-  
-  // 深拷贝克隆地点
-  const clonedPlaces = origCrew.places.map(p => ({
-    ...p,
-    id: `cloned_${p.id}_${Date.now()}`,
-    status: p.status // 继承是否 confirmed 状态
-  }));
-
-  // 生成新成员列表
-  const newMembers = usersList.slice(0, newMembersCount);
-
-  // 初始化新局
-  crews[newCrewId] = {
-    id: newCrewId,
-    title: newTitle,
-    date: newDate,
-    members: newMembers,
-    startPoint: '自定出发地',
-    budgetRange: origCrew.budgetRange,
-    status: 'active',
-    currentPlan: 'food',
-    manualAdjusted: false,
-    places: clonedPlaces,
-    plans: JSON.parse(JSON.stringify(origCrew.plans)), // 继承原规划框架
-    expenses: [] // 新局 AA 账本清零
-  };
-
-  // 绑定新局的 Stops id
-  const nextCrew = crews[newCrewId];
-  syncPlanStops(nextCrew);
-
-  // 关闭 Modal
-  document.getElementById('replicateModal').setAttribute('aria-hidden', 'true');
-
-  // 提示成功，回首页展示
-  alert(`复刻建局成功！已继承所有地点。现自动跳转到【${newTitle}】组局主战场！`);
-
-  // 设置当前局，渲染并导航
-  currentCrewId = newCrewId;
-  renderHomeCrews();
-  renderCrewWorkspace(nextCrew);
-
-  // 路由跳转
-  PageRouter.switchTab('home');
-  PageRouter.navigateTo('page-crew-detail');
-
-  logApiCall('/api/v1/crews/replicate', 'POST', 200, `Replicated crew into new ID: ${newCrewId}`, 1820, 0.055);
-}
-
-// ================= 11. 初始化与 DOM 事件绑定 =================
-function initApp() {
-  // 1. 初始化页面路由与首屏渲染
-  PageRouter.init();
-  renderHomeCrews();
-  renderGuidesFeed();
-
-  // 2. 首页“新建组局”表单提交
-  const createCrewModal = document.getElementById('createCrewModal');
-  const openCreateCrewBtn = document.getElementById('openCreateCrewBtn');
-  const closeCreateCrewBtn = document.getElementById('closeCreateCrewModal');
-  const createCrewForm = document.getElementById('createCrewForm');
-
-  if (openCreateCrewBtn && createCrewModal) {
-    openCreateCrewBtn.addEventListener('click', () => createCrewModal.setAttribute('aria-hidden', 'false'));
-  }
-  if (closeCreateCrewBtn && createCrewModal) {
-    closeCreateCrewBtn.addEventListener('click', () => createCrewModal.setAttribute('aria-hidden', 'true'));
-  }
-
-  if (createCrewForm) {
-    createCrewForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = document.getElementById('newCrewTitle').value;
-      const date = document.getElementById('newCrewDate').value;
-      const membersCount = parseInt(document.getElementById('newCrewMembers').value) || 6;
-      const start = document.getElementById('newCrewStart').value || '北京南站';
-      const budget = document.getElementById('newCrewBudget').value;
-
-      const newCrewId = `crew_${Date.now()}`;
-      crews[newCrewId] = {
-        id: newCrewId,
-        title,
-        date,
-        members: usersList.slice(0, membersCount),
-        startPoint: start,
-        budgetRange: budget,
-        status: 'active',
-        currentPlan: 'food',
-        manualAdjusted: false,
-        places: [
-          { id: 'p100', name: '预设聚餐推荐地', cat: '午饭', detail: '开局 AI 匹配的经典美食地', votes: 1, status: 'confirmed', x: 100, y: 80 }
-        ],
-        plans: {
-          food: {
-            title: '芝士的推荐吃逛',
-            copy: '开局推荐路线，包含预设地点。',
-            reason: '初始一站地，适合迅速落脚。',
-            unselected: '无',
-            stops: [
-              { time: '12:00', type: '午饭', name: '预设聚餐推荐地', detail: '系统自动生成站点', votes: '1想去', id: 'p100' }
-            ]
-          }
-        },
-        expenses: []
-      };
-
-      // 重新渲染首页，并关闭 modal
-      renderHomeCrews();
-      createCrewModal.setAttribute('aria-hidden', 'true');
-      createCrewForm.reset();
-
-      // 直接进入新局详情
-      currentCrewId = newCrewId;
-      renderCrewWorkspace(crews[newCrewId]);
-      PageRouter.navigateTo('page-crew-detail');
-
-      logApiCall('/api/v1/crews', 'POST', 200, `Created crew "${title}"`, 340, 0.008);
-    });
-  }
-
-  // 3. 组局详情页返回首页
-  document.getElementById('backToHomeBtn')?.addEventListener('click', () => {
-    PageRouter.back();
-  });
-
-  // 4. 详情页内部子导航 Tab 切换
-  document.querySelectorAll('.crew-sub-nav .sub-nav-item').forEach(item => {
-    item.addEventListener('click', () => {
-      document.querySelectorAll('.crew-sub-nav .sub-nav-item').forEach(x => x.classList.remove('is-active'));
-      item.classList.add('is-active');
-
-      const targetTab = item.dataset.crewTab;
-      document.querySelectorAll('.crew-content .crew-tab-panel').forEach(p => {
-        p.classList.toggle('is-active', p.id === `crew-panel-${targetTab}`);
-      });
-      
-      // 切到地图时重绘
-      if (targetTab === 'map') {
-        drawInteractiveMap(crews[currentCrewId]);
-      }
-    });
-  });
-
-  // 5. 地点池筛选 Tab
-  document.querySelectorAll('.pool-filter .filter-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      document.querySelectorAll('.pool-filter .filter-chip').forEach(x => x.classList.remove('is-active'));
-      chip.classList.add('is-active');
-      renderPlacesList(crews[currentCrewId]);
-    });
-  });
-
-  // 6. 去添加地点子页面
-  document.getElementById('goToAddPlaceBtn')?.addEventListener('click', () => {
-    PageRouter.navigateTo('page-add-place');
-  });
-  document.getElementById('backToCrewBtn')?.addEventListener('click', () => {
-    PageRouter.back();
-  });
-
-  // 7. 添加地点子 tab 切换
-  document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-      document.querySelectorAll('.modal-sub-tabs .sub-tab').forEach(x => x.classList.remove('is-active'));
-      tab.classList.add('is-active');
-
-      const mode = tab.dataset.addMode;
-      document.querySelectorAll('.add-place-content .add-mode-panel').forEach(p => {
-        p.classList.toggle('is-active', p.id === `addPanel${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
-      });
-    });
-  });
-
-  // 8. 模拟 OCR 截图上传点击
-  document.getElementById('ocrDropzone')?.addEventListener('click', () => {
-    handleSimulatedOcr();
-  });
-
-  // OCR 确认入库
-  document.getElementById('btnOcrConfirm')?.addEventListener('click', () => {
-    const name = document.getElementById('ocrConfirmName').value;
-    const crew = crews[currentCrewId];
-    
-    // 入库
-    const newPl = {
-      id: `p_ocr_${Date.now()}`,
-      name,
-      cat: '晚饭',
-      detail: '从截图 OCR 智能提取并入库',
-      votes: 5,
-      status: 'candidate',
-      x: 275,
-      y: 45
-    };
-    crew.places.push(newPl);
-    
-    // 清除 OCR 预览
-    document.getElementById('ocrResultPreview').style.display = 'none';
-    document.getElementById('ocrDropzone').style.display = 'block';
-
-    // 返回组局工作空间
-    PageRouter.back();
-  });
-
-  // 链接确认入库
-  document.getElementById('btnLinkConfirm')?.addEventListener('click', () => {
-    handleLinkParse();
-  });
-
-  // POI 模拟模糊检索
-  const searchInput = document.getElementById('poiSearchInput');
-  const searchResults = document.getElementById('poiSearchResults');
-  if (searchInput && searchResults) {
-    // 监听输入
-    searchInput.addEventListener('input', () => {
-      const q = searchInput.value.trim();
-      if (q.length < 2) {
-        searchResults.innerHTML = '';
-        return;
-      }
-      
-      // 预置候选
-      const mockPois = [
-        { name: `老徐州地锅鸡 (${q}分店)`, addr: '云龙区解放南路202号 · 距离 1.1km', cat: '午饭', x: 120, y: 60 },
-        { name: `徐州彭城饭庄 - ${q}特色菜`, addr: '彭城路18号 · 高德评分 4.7', cat: '午饭', x: 210, y: 80 },
-        { name: `${q}大牌档`, addr: '泉山区青年路22号 · 营业中', cat: '晚饭', x: 80, y: 140 }
-      ];
-
-      searchResults.innerHTML = mockPois.map(poi => `
-        <div class="candidate-item">
-          <div>
-            <strong>${poi.name}</strong>
-            <p class="candidate-addr">${poi.addr}</p>
-          </div>
-          <button class="btn-confirm-poi" type="button" data-poi-name="${poi.name}" data-poi-cat="${poi.cat}" data-poi-x="${poi.x}" data-poi-y="${poi.y}">确认入库</button>
-        </div>
-      `).join('');
-
-      // 绑定每个确认入库事件
-      searchResults.querySelectorAll('.btn-confirm-poi').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const crew = crews[currentCrewId];
-          const name = btn.dataset.poiName;
-          const cat = btn.dataset.poiCat;
-          const x = parseInt(btn.dataset.poiX);
-          const y = parseInt(btn.dataset.poiY);
-
-          crew.places.push({
-            id: `p_search_${Date.now()}`,
-            name,
-            cat,
-            detail: '人工地图 POI 检索添加',
-            votes: 1,
-            status: 'candidate',
-            x,
-            y
-          });
-
-          // 清空输入
-          searchInput.value = '';
-          searchResults.innerHTML = '';
-
-          // 返回
-          PageRouter.back();
-
-          logApiCall('/api/v1/places', 'POST', 200, `Confirmed POI and added place: ${name}`, 140, 0.003);
-        });
-      });
-    });
-  }
-
-  // 9. AI 重排一排按钮
-  document.querySelector('[data-replan]')?.addEventListener('click', () => {
-    triggerAiReplan();
-  });
-
-  const adoptBtn = document.getElementById('btnAdoptItinerary');
-  if (adoptBtn) {
-    adoptBtn.addEventListener('click', () => {
-      alert('路线采用成功！已冻结当前站点顺序并同步至主地图。');
-      const crew = crews[currentCrewId];
-      crew.manualAdjusted = false;
-      renderCrewWorkspace(crew);
-
-      logApiCall('/api/v1/itinerary/adopt', 'POST', 200, 'Itinerary adopted', 120, 0.002);
-    });
-  }
-
-  // AI 快捷指令 chips
-  document.querySelectorAll('.chip-quick-prompt').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const prompt = chip.textContent.trim();
-      triggerAiReplan(prompt);
-    });
-  });
-
-  // AI Prompt 输入发送
-  const btnPromptSend = document.getElementById('btnAiPromptSend');
-  const inputPrompt = document.getElementById('aiPromptInput');
-  if (btnPromptSend && inputPrompt) {
-    btnPromptSend.addEventListener('click', () => {
-      const q = inputPrompt.value.trim();
-      if (q) {
-        triggerAiReplan(q);
-        inputPrompt.value = '';
-      }
-    });
-    inputPrompt.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        const q = inputPrompt.value.trim();
-        if (q) {
-          triggerAiReplan(q);
-          inputPrompt.value = '';
-        }
-      }
-    });
-  }
-
-  // 10. 账本 - 去记账 Modal
-  const addExpenseModal = document.getElementById('addExpenseModal');
-  const goToAddExpenseBtn = document.getElementById('goToAddExpenseBtn');
-  const closeAddExpenseBtn = document.getElementById('closeAddExpenseModal');
-  const addExpenseForm = document.getElementById('addExpenseForm');
-
-  if (goToAddExpenseBtn && addExpenseModal) {
-    goToAddExpenseBtn.addEventListener('click', () => {
-      const crew = crews[currentCrewId];
-
-      // 动态填充垫付人选项
-      const payerSel = document.getElementById('expPayer');
-      payerSel.innerHTML = crew.members.map(m => `<option value="${m}">${m}</option>`).join('');
-
-      // 动态填充分摊人员复选框 (F5)
-      const listCheck = document.getElementById('expParticipantsList');
-      listCheck.innerHTML = crew.members.map(m => `
-        <label class="participant-check-label">
-          <input type="checkbox" name="expShareMember" value="${m}" checked> ${m}
-        </label>
-      `).join('');
-
-      // 动态填充关联地点选项
-      const placeSel = document.getElementById('expPlaceSelect');
-      const confirmedPlaces = crew.places.filter(p => p.status === 'confirmed');
-      placeSel.innerHTML = `
-        <option value="无关联">-- 无关联地点 --</option>
-        ${confirmedPlaces.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
-        <option value="打车交通">打车交通费</option>
-      `;
-
-      addExpenseModal.setAttribute('aria-hidden', 'false');
-    });
-  }
-
-  if (closeAddExpenseBtn && addExpenseModal) {
-    closeAddExpenseBtn.addEventListener('click', () => addExpenseModal.setAttribute('aria-hidden', 'true'));
-  }
-
-  if (addExpenseForm) {
-    addExpenseForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const crew = crews[currentCrewId];
-
-      const title = document.getElementById('expName').value || '未命名消费';
-      const amount = parseFloat(document.getElementById('expAmount').value) || 0;
-      const payer = document.getElementById('expPayer').value;
-      const place = document.getElementById('expPlaceSelect').value;
-
-      // 收集选中的分摊人
-      const checkboxes = document.querySelectorAll('input[name="expShareMember"]:checked');
-      const selectedMembers = Array.from(checkboxes).map(cb => cb.value);
-
-      if (selectedMembers.length === 0) {
-        alert('请至少选择一个分摊成员！');
-        return;
-      }
-
-      // 新增账单
-      const newExp = {
-        id: `e_${Date.now()}`,
-        title,
-        amount,
-        payer,
-        place,
-        participants: selectedMembers
-      };
-
-      crew.expenses.push(newExp);
-      
-      // 关闭并重绘
-      addExpenseModal.setAttribute('aria-hidden', 'true');
-      addExpenseForm.reset();
-      calculateLedgerDebt(crew);
-
-      logApiCall('/api/v1/expenses', 'POST', 200, `Recorded expense "${title}" (split among ${selectedMembers.length} members)`, 220, 0.005);
-    });
-  }
-
-  // 11. 复制结算文本按钮
-  const copyBtn = document.getElementById('copySettlementBtn');
-  if (copyBtn) {
-    copyBtn.addEventListener('click', () => {
-      const listEl = document.getElementById('transferList');
-      if (listEl) {
-        const text = Array.from(listEl.querySelectorAll('li')).map(li => li.innerText).join('\n');
-        
-        // 模拟复制
-        navigator.clipboard?.writeText(text).then(() => {
-          copyBtn.textContent = '已成功复制文本到剪贴板！';
-        }).catch(() => {
-          copyBtn.textContent = '复制成功 (环境暂不支持Clipboard API)';
-        });
-        
-        setTimeout(() => {
-          copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> 复制结算结果文本';
-        }, 2000);
-      }
-    });
-  }
-
-  // 12. 发布攻略与复刻路由跳转
-  document.getElementById('goToPublishGuideBtn')?.addEventListener('click', () => {
-    handlePublishGuide();
-  });
-  document.getElementById('backToCrewFromGuideBtn')?.addEventListener('click', () => {
-    PageRouter.back();
-  });
-
-  // 脱敏勾选框联动预览刷新 (F7)
-  const toggles = ['chkShowStops', 'chkShowVotes', 'chkShowBudget'];
-  toggles.forEach(id => {
-    document.getElementById(id)?.addEventListener('change', () => {
-      const crew = crews[currentCrewId];
-      renderGuideRoutePreview(crew);
-    });
-  });
-
-  // 打开复刻 modal
-  const replicateModal = document.getElementById('replicateModal');
-  const openReplicateBtn = document.getElementById('openReplicateModalBtn');
-  const closeReplicateBtn = document.getElementById('closeReplicateModal');
-  const replicateForm = document.getElementById('replicateForm');
-
-  if (openReplicateBtn && replicateModal) {
-    openReplicateBtn.addEventListener('click', () => {
-      const crew = crews[currentCrewId];
-      document.getElementById('repCrewTitle').value = `复刻版_${crew.title}`;
-      replicateModal.setAttribute('aria-hidden', 'false');
-    });
-  }
-
-  if (closeReplicateBtn && replicateModal) {
-    closeReplicateBtn.addEventListener('click', () => replicateModal.setAttribute('aria-hidden', 'true'));
-  }
-
-  if (replicateForm) {
-    replicateForm.addEventListener('submit', (e) => {
-      handleReplicateAction(e);
-    });
-  }
-
-  // 13. 个人中心 - 设置开关与条目交互
-  // 开关切换
-  document.querySelectorAll('[data-toggle]').forEach(toggle => {
-    toggle.addEventListener('click', () => {
-      toggle.classList.toggle('is-on');
-    });
-  });
-
-  // 设置条目点击 (模拟跳转/反馈)
-  const settingsLabels = {
-    profile: '个人资料编辑页（昵称、头像、吃货标签）',
-    wallet: '我的积分：复刻攻略、邀好友赚积分',
-    privacy: '隐私保护说明：账单与头像默认脱敏，归档可删',
-    archive: '归档组局管理（已结束的局可归档，账单可删）',
-    cache: '已清理本地缓存 12.4 MB',
-    feedback: '意见反馈：感谢你的建议，我们会尽快处理！',
-    about: '馋猫局儿 v0.1.0 · 周末组局 AI 助手',
-    logout: '已退出登录（原型演示）'
-  };
-  document.querySelectorAll('[data-settings]').forEach(item => {
-    item.addEventListener('click', () => {
-      const key = item.dataset.settings;
-      const msg = settingsLabels[key] || '功能开发中';
-      if (key === 'cache') {
-        const valEl = item.querySelector('.settings-item-value');
-        if (valEl) valEl.textContent = '0 MB';
-      }
-      alert(msg);
-    });
-  });
-
-  // 初始渲染 AI 配额环
-  updateAiQuotaUI();
-
-  // 14. 地图底部抽屉交互 — 点击手柄展开/收起
-  const sheetHandleBar = document.getElementById('sheetHandleBar');
-  const mapBottomSheet = document.getElementById('mapBottomSheet');
-  if (sheetHandleBar && mapBottomSheet) {
-    sheetHandleBar.addEventListener('click', () => {
-      mapBottomSheet.classList.toggle('is-expanded');
-    });
-  }
-}
-
-// 统一执行初始化，防范 Chrome file:// 协议 DOMContentLoaded 事件提早触发导致失效的问题
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initApp);
-} else {
-  initApp();
-}
+document.addEventListener("click",e=>{
+ const sheetButton=e.target.closest("[data-sheet]");if(sheetButton){openSheet(sheetButton.dataset.sheet);return}
+ const settings=e.target.closest("[data-settings]");if(settings){showView("settings");return}
+ const themeChoice=e.target.closest("[data-theme-choice]");if(themeChoice){applyTheme(themeChoice.dataset.themeChoice);toast("已切换为「"+themeChoice.querySelector("b").textContent+"」");return}
+ const publish=e.target.closest("[data-publish-guide]");if(publish){currentPublishGuideId=publish.dataset.publishGuide;const item=ownedGuides.find(x=>x.id===currentPublishGuideId);$("#publishGuideTitle").textContent=item.title;$("#publishConsent").checked=false;$("#confirmPublish").disabled=true;openSheet("publishGuide");return}
+ if(e.target.closest("[data-profile-back]")){showView("profile");return}
+ const placeMode=e.target.closest("[data-place-mode]");if(placeMode){switchPlaceMode(placeMode.dataset.placeMode);return}
+ const recent=e.target.closest("[data-recent]");if(recent){$("#placeSearchInput").value=recent.dataset.recent;renderCandidates(recent.dataset.recent);return}
+ const review=e.target.closest("[data-review-candidate]");if(review){openPlaceEditor(candidates[+review.dataset.reviewCandidate],"");return}
+ const placeType=e.target.closest("[data-place-type]");if(placeType){selectedPlaceType=placeType.dataset.placeType;$$("[data-place-type]").forEach(b=>b.classList.toggle("active",b===placeType));return}
+ if(e.target.closest(".sheet-close")){closeSheet();return}
+ if(e.target===$("#sheetOverlay")){closeSheet();return}
+ const nav=e.target.closest("[data-nav]");if(nav){showView(nav.dataset.nav);return}
+ if(e.target.closest("[data-home]")){showView("home");return}
+ if(e.target.closest("[data-open-trip]")){showView("trip");return}
+ if(e.target.closest("[data-open-search]")){runSearch();showView("search");$("#searchInput").focus();return}
+ const tripTab=e.target.closest("[data-trip]");if(tripTab){$$("[data-trip]").forEach(b=>b.classList.toggle("active",b===tripTab));$$("[data-panel]").forEach(p=>p.classList.toggle("active",p.dataset.panel===tripTab.dataset.trip));return}
+ const publicDrawerTab=e.target.closest("[data-public-drawer-tab]");if(publicDrawerTab){switchPublicDrawer(publicDrawerTab.dataset.publicDrawerTab);return}
+ const drawerTab=e.target.closest("[data-drawer-tab]");if(drawerTab){switchDrawer(drawerTab.dataset.drawerTab);return}
+ const aa=e.target.closest("[data-aa-stage]");if(aa){switchAA(aa.dataset.aaStage);return}
+ const profile=e.target.closest("[data-profile]");if(profile){$$("[data-profile]").forEach(b=>b.classList.toggle("active",b===profile));renderProfile(profile.dataset.profile);return}
+ const hot=e.target.closest("[data-hot]");if(hot){$$("[data-hot]").forEach(b=>b.classList.toggle("active",b===hot));setRegion(...hot.dataset.hot.split("|"));return}
+ const add=e.target.closest("[data-add-candidate]");if(add){const p=candidates[+add.dataset.addCandidate];if(places.some(x=>x.name===p.name)){toast("地点已经在合集中");return}places.push({...p,votes:1});renderPlaces();closeSheet();toast("已添加 "+p.name);return}
+ const vote=e.target.closest("[data-vote]");if(vote){places[+vote.dataset.vote].votes++;renderPlaces();toast("已投票想去");return}
+ const addStop=e.target.closest("[data-add-stop-day]");if(addStop){openStopEditor(-1,+addStop.dataset.addStopDay);return}
+ const edit=e.target.closest("[data-edit-stop]");if(edit){openStopEditor(+edit.dataset.editStop);return}
+ const card=e.target.closest("[data-feed-city]");if(card){openPublicTrip(card.dataset.feedCity);return}
+ const publicPin=e.target.closest(".public-route-pin");if(publicPin){switchPublicDrawer("itinerary");return}
+ const pin=e.target.closest(".pin");if(pin){switchDrawer("places");$$(".place-item").forEach(x=>x.classList.toggle("selected",x.dataset.placeIndex===pin.dataset.stop));document.querySelector('[data-place-index="'+pin.dataset.stop+'"]')?.scrollIntoView({block:"center",behavior:"smooth"});return}
+});
+$("#toggleDrawer").addEventListener("click",()=>$("#mapDrawer").classList.toggle("expanded"));
+$("#togglePublicDrawer").addEventListener("click",()=>$("#publicMapDrawer").classList.toggle("expanded"));
+$("#addManualStop").addEventListener("click",()=>openStopEditor(-1,1));
+$("#startManualItinerary").addEventListener("click",()=>openStopEditor(-1,1));
+$("#generate").addEventListener("click",generateItinerary);$("#regenerate").addEventListener("click",generateItinerary);
+$("#cancel").addEventListener("click",()=>{$("#loading").classList.remove("visible");clearInterval(loadingTimer)});
+$("#locateMe").addEventListener("click",()=>toast("已回到当前行程范围"));
+$("#shuffle").addEventListener("click",()=>{feedData.push(feedData.shift());renderFeed(feedData);toast("已换一批路线")});
+function runSearch(){const term=$("#searchInput").value.trim();const data=feedData.filter(x=>!term||x.city.includes(term)||x.title.includes(term)||x.tag.includes(term));$("#searchKeyword").textContent=term||"全部";$("#searchCount").textContent=data.length+" 条结果";renderFeed(data,"#searchGrid")}
+$("#searchSubmit").addEventListener("click",runSearch);$("#searchInput").addEventListener("keydown",e=>{if(e.key==="Enter")runSearch()});
+$("#createGuideForm").addEventListener("submit",e=>{
+ e.preventDefault();if($("#endDate").value<$("#startDate").value){toast("返程日期不能早于出发日期");return}guide={name:$("#guideNameInput").value.trim(),province:$("#provincePicker").value,city:$("#cityPicker").value,district:$("#districtPicker").value,start:$("#startDate").value,end:$("#endDate").value};
+ places=[];stops=[];expenses=[];itineraryGenerated=false;settlementGenerated=false;closeSheet();renderTrip();showView("trip");switchDrawer("places");toast("攻略已创建，先添加 3 个想去的地方")
+});
+$("#editStopForm").addEventListener("submit",e=>{e.preventDefault();const i=+$("#editStopIndex").value,node={day:+$("#editStopDay").value,time:$("#editStopTime").value,name:$("#editStopName").value.trim(),desc:$("#editStopDesc").value.trim()||"手动安排的行程节点",duration:$("#editStopDuration").value,tag:i>=0?stops[i].tag:"手动 · 可继续编辑"};if(i>=0)stops[i]={...stops[i],...node};else stops.push(node);itineraryGenerated=true;renderTrip();closeSheet();toast(i>=0?"行程节点已保存":"已添加到 Day "+node.day)});
+$("#expenseForm").addEventListener("submit",e=>{e.preventDefault();expenses.push({name:$("#expenseName").value,amount:+$("#expenseAmount").value,payer:$("#expensePayer").value,split:"4人均分",icon:"receipt"});invalidateSettlement();renderExpenses();closeSheet();switchAA("ledger");toast("账单已保存")});
+$("#generateSettlement").addEventListener("click",()=>{const b=$("#generateSettlement");b.disabled=true;b.innerHTML='<i data-lucide="loader-circle"></i>奶糖正在精算...';icons();setTimeout(()=>{settlementGenerated=true;renderSettlement();switchAA("settlement");b.disabled=false;b.innerHTML='<i data-lucide="calculator"></i>生成最少转账方案';icons();toast("结算方案已生成")},900)});
+$("#redoSettlement").addEventListener("click",()=>{settlementGenerated=false;renderSettlement();switchAA("ledger");toast("请确认账单后重新生成")});
+$$("[data-aa-back]").forEach(b=>b.addEventListener("click",()=>switchAA("ledger")));
+$("#copy").addEventListener("click",async()=>{const text="大理朋友局结算：小乔→晶晶 ¥168.50；林一→阿豪 ¥74.00";try{await navigator.clipboard.writeText(text);toast("结算结果已复制")}catch{toast("结算结果已准备好")}});
+$("#invite").addEventListener("click",()=>toast("微信邀请卡片已生成"));$("#scan").addEventListener("click",()=>toast("已识别：才村咖啡 ¥128.00"));
+$("#placeSearchInput").addEventListener("input",e=>renderCandidates(e.target.value.trim()));
+$("#placeSearchForm").addEventListener("submit",e=>{e.preventDefault();const term=$("#placeSearchInput").value.trim();renderCandidates(term);toast(term?"已找到附近地点":"已展示附近推荐")});
+$("#clearRecent").addEventListener("click",()=>{$("#recentSearchList").innerHTML='<span class="muted-empty">暂无最近搜索</span>'});
+$("#parseShareLink").addEventListener("click",()=>{
+ const link=$("#shareLinkInput").value.trim();if(!link||!/^https?:\/\//i.test(link)){toast("请粘贴有效的公开分享链接");return}
+ if(credits<5){toast("积分不足，暂时无法智能识别");return}
+ const button=$("#parseShareLink");button.disabled=true;button.innerHTML='<i data-lucide="loader-circle"></i>芝士正在识别地点...';icons();
+ setTimeout(()=>{spendCredits(5,"链接智能识别");renderExtractedPlaces();$("#importResults").classList.add("visible");button.disabled=false;button.innerHTML='<i data-lucide="refresh-cw"></i>重新识别这条链接';icons();toast("识别完成，请确认要导入的地点")},950)
+});
+$("#toggleImportAll").addEventListener("click",()=>{const checks=$$(".extracted-check"),all=checks.every(c=>c.checked);checks.forEach(c=>c.checked=!all);updateSelectedImportCount()});
+$("#extractedPlaces").addEventListener("change",updateSelectedImportCount);
+$("#batchImportPlaces").addEventListener("click",()=>{
+ const selected=$$(".extracted-check:checked").map(c=>extractedPlaces[+c.dataset.importIndex]);if(!selected.length){toast("请至少选择一个地点");return}
+ let added=0;selected.forEach(p=>{if(!places.some(x=>x.name===p.name)){places.push({...p,votes:1,source:"智能识别"});added++}});
+ renderPlaces();closeSheet();toast(added?"已批量导入 "+added+" 个地点":"所选地点已在合集中")
+});
+
+$("#publishConsent").addEventListener("change",e=>$("#confirmPublish").disabled=!e.target.checked);
+$("#confirmPublish").addEventListener("click",()=>{
+ const item=ownedGuides.find(x=>x.id===currentPublishGuideId);if(!item||!$("#publishConsent").checked)return;
+ item.status="published";credits+=30;if($("#latestPointLog"))$("#latestPointLog").textContent="公开攻略审核通过 +30 分";
+ renderCredits();renderProfile("owned");closeSheet();toast("原型已模拟审核通过，获得 30 积分")
+});
+$("#loginAgreement").addEventListener("change",e=>$("#startWechatLogin").disabled=!e.target.checked);
+$("#startWechatLogin").addEventListener("click",()=>{
+ loginFromFirstLaunch=true;const button=$("#startWechatLogin");button.disabled=true;button.innerHTML='<i data-lucide="loader-circle"></i>正在建立微信身份...';icons();
+ setTimeout(()=>{button.innerHTML='<i data-lucide="message-circle"></i>微信快捷登录';button.disabled=!$("#loginAgreement").checked;openSheet("wechatLogin")},520)
+});
+$("#publicTripBack").addEventListener("click",()=>showView(publicReturnView));
+$("#sharePublicTrip").addEventListener("click",()=>toast("公开攻略分享卡片已生成"));
+$("#savePublicTrip").addEventListener("click",e=>{e.currentTarget.classList.toggle("saved");e.currentTarget.innerHTML=e.currentTarget.classList.contains("saved")?'<i data-lucide="bookmark-check"></i>已收藏':'<i data-lucide="bookmark"></i>收藏';icons();toast(e.currentTarget.classList.contains("saved")?"已收藏到我的":"已取消收藏")});
+$("#copyPublicTrip").addEventListener("click",()=>{
+ const item=currentPublicTrip||feedData[0];guide={...guide,name:item.title,city:item.city+"市",start:item.start,end:endDateFromDays(item.start,item.days)};stops=structuredClone(currentPublicStops);places=currentPublicStops.map((s,i)=>({name:s.name,type:s.tag.startsWith("吃")?"吃":"游",desc:s.desc,votes:0,icon:s.tag.startsWith("吃")?"utensils":"map-pin",source:"公开攻略套用"}));expenses=[];settlementGenerated=false;itineraryGenerated=true;showView("trip");switchDrawer("itinerary");toast("已套用为私密攻略，账本为空")
+});
+$("#resetLogin")?.addEventListener("click",()=>{try{localStorage.removeItem("crew-auth-demo")}catch{}$("#loginAgreement").checked=false;$("#startWechatLogin").disabled=true;showView("auth");toast("已回到首次登录演示")});
+$("#chooseWechatAvatar").addEventListener("click",()=>{
+ $("#chosenAvatarText").textContent="晶";$("#loginAvatarPreview").textContent="晶";$("#chooseWechatAvatar").classList.add("selected");toast("已选择微信头像")
+});
+$("#wechatLoginForm").addEventListener("submit",e=>{
+ e.preventDefault();const name=$("#wechatNickname").value.trim()||"微信用户",initial=name.slice(0,1);
+ $("#profileAvatarText").textContent=initial;$("#profileName").textContent=name+"的旅行宇宙";$("#profileLevel").textContent="微信用户 · 旅行策划师 Lv.2";
+ $("#profileLoginLink").innerHTML='微信资料已同步 <i data-lucide="badge-check"></i>';try{localStorage.setItem("crew-auth-demo","1")}catch{}
+ closeSheet();if(loginFromFirstLaunch){loginFromFirstLaunch=false;showView("home")}icons();toast("登录成功，已赠送 100 旅行积分")
+});
+$("#placeEditorForm").addEventListener("submit",e=>{
+ e.preventDefault();const name=$("#placeEditorName").value.trim();if(places.some(x=>x.name===name)){toast("这个地点已经在合集中");return}
+ const iconMap={游:"landmark",吃:"utensils",住:"bed-double",购:"shopping-bag"};
+ places.push({name:name,type:selectedPlaceType,desc:$("#placeEditorNote").value.trim()||$("#placeEditorAddress").value,votes:1,icon:iconMap[selectedPlaceType],source:$("#placeEditorSource").value.trim()});
+ renderPlaces();closeSheet();toast("已添加 "+name)
+});
+let initialTheme="sunny",hasSession=false;try{initialTheme=localStorage.getItem("crew-theme")||"sunny";hasSession=localStorage.getItem("crew-auth-demo")==="1"}catch{}applyTheme(initialTheme);initRegions();renderFeed(feedData);runSearch();renderCandidates();renderTrip();renderProfile("owned");renderCredits();showView(hasSession?"home":"auth");icons();

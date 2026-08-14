@@ -1,0 +1,4 @@
+interface:
+  display_name: "同步需求文档"
+  short_description: "需求变更后同步产品需求、前后端实现、技术设计与项目说明文档"
+  default_prompt: "Use $sync-requirements-docs to synchronize this requirement change across all affected project documentation and verify consistency."
