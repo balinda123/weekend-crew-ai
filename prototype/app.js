@@ -116,10 +116,16 @@ function updatePlanGate(){
  $("#mapStat span").textContent=itineraryGenerated?"路线已避开折返":"已收藏 "+count+" 个地点";
 }
 function stopCardHtml(s,i){return '<article class="stop-card" draggable="true" data-stop-index="'+i+'" data-stop-day="'+s.day+'"><time class="stop-time">'+s.time+'</time><div class="stop-main"><strong>'+s.name+'</strong><p>'+s.desc+'</p><span>'+s.tag+'</span></div><div class="stop-actions"><button data-edit-stop="'+i+'" title="编辑节点"><i data-lucide="pencil"></i></button><button class="drag-handle" title="拖拽排序"><i data-lucide="grip-vertical"></i></button></div></article>'}
+function updateTripPublishGate(){
+ const btn=$("#tripPublishBtn");if(!btn)return;
+ const ok=itineraryGenerated&&stops.length>=3;
+ btn.disabled=!ok;
+ btn.title=ok?"发布到公开行程广场":(itineraryGenerated?"至少安排 3 个行程节点后可发布":"生成 AI 行程后即可发布");
+}
 function renderTimeline(){
  const count=tripDayCount();stops=stops.map(s=>({...s,day:Math.min(Math.max(+s.day||1,1),count)}));$("#timeline").className="timeline day-timeline";
  $("#timeline").innerHTML=Array.from({length:count},(_,d)=>{const day=d+1,rows=stops.map((s,i)=>({...s,index:i})).filter(s=>s.day===day);return '<section class="trip-day-group"><header><span>DAY '+day+'</span><div><strong>'+dayDateLabel(guide.start,day)+'</strong><small>'+rows.length+' 个行程节点</small></div><button data-add-stop-day="'+day+'" title="在这一天添加地点"><i data-lucide="plus"></i></button></header><div class="trip-day-stops">'+(rows.length?rows.map(s=>stopCardHtml(s,s.index)).join(""):'<button class="day-empty" data-add-stop-day="'+day+'"><i data-lucide="calendar-plus"></i>这一天还没有安排，手动添加</button>')+'</div></section>'}).join("");
- $("#itineraryBadge").textContent=stops.length;bindDrag();icons()
+ $("#itineraryBadge").textContent=stops.length;updateTripPublishGate();bindDrag();icons()
 }
 function renderTrip(){
  const count=tripDayCount();$("#tripGuideName").textContent=guide.name;$("#homeGuideName").textContent=guide.name;
@@ -178,8 +184,8 @@ function renderProfile(kind){
  const list=kind==="owned"?ownedGuides:kind==="joined"?joinedGuides:feedData.slice(1,6);
  $("#profileList").innerHTML=list.map(x=>{
   if(kind==="saved")return '<article class="profile-guide-card"><button class="profile-guide-main" data-feed-city="'+x.city+'"><span class="profile-item-cover '+x.color+'">'+x.city+'</span><span class="profile-guide-copy"><span class="guide-status saved"><i data-lucide="bookmark"></i>已收藏</span><h3>'+x.title+'</h3><p>'+x.uses+' 人套用 · '+x.likes+' 次点赞</p><span class="guide-foot">'+x.tag+' · 来自公开广场</span></span><i data-lucide="chevron-right"></i></button></article>';
-  const published=x.status==="published",status=published?"已发布":"私密共创",statusIcon=published?"globe-2":"lock-keyhole";
-  const action=kind==="owned"&&!published?'<button class="publish-action" data-publish-guide="'+x.id+'"><i data-lucide="send"></i>发布</button>':'<span class="guide-role">'+(kind==="owned"?"我创建":"我加入")+'</span>';
+  const published=x.status==="published",pending=x.status==="pending",status=published?"已发布":pending?"审核中":"私密共创",statusIcon=published?"globe-2":pending?"clock":"lock-keyhole";
+  const action=kind==="owned"&&!(published||pending)?'<button class="publish-action" data-publish-guide="'+x.id+'"><i data-lucide="send"></i>发布</button>':'<span class="guide-role">'+(kind==="owned"?"我创建":"我加入")+'</span>';
   return '<article class="profile-guide-card"><button class="profile-guide-main" data-open-trip><span class="profile-item-cover '+x.color+'">'+x.city+'</span><span class="profile-guide-copy"><span class="guide-status '+x.status+'"><i data-lucide="'+statusIcon+'"></i>'+status+'</span><h3>'+x.title+'</h3><p>'+x.places+' 个地点 · '+x.members+' 位成员</p><span class="guide-foot">'+x.updated+'</span></span><i data-lucide="chevron-right"></i></button><div class="profile-guide-actions"><span>'+ (published?"公开广场所有人可见":"仅受邀成员可见") +'</span>'+action+'</div></article>'
  }).join("");icons()
 }
@@ -307,10 +313,21 @@ $("#batchImportPlaces").addEventListener("click",()=>{
 });
 
 $("#publishConsent").addEventListener("change",e=>$("#confirmPublish").disabled=!e.target.checked);
+$("#tripPublishBtn")?.addEventListener("click",()=>{
+ currentPublishGuideId="trip-draft";$("#publishGuideTitle").textContent=guide.name;$("#publishConsent").checked=false;$("#confirmPublish").disabled=true;openSheet("publishGuide")
+});
 $("#confirmPublish").addEventListener("click",()=>{
- const item=ownedGuides.find(x=>x.id===currentPublishGuideId);if(!item||!$("#publishConsent").checked)return;
- item.status="published";credits+=30;if($("#latestPointLog"))$("#latestPointLog").textContent="公开攻略审核通过 +30 分";
- renderCredits();renderProfile("owned");closeSheet();toast("原型已模拟审核通过，获得 30 积分")
+ if(!$("#publishConsent").checked)return;
+ if(currentPublishGuideId==="trip-draft"){
+   const existing=ownedGuides.find(x=>x.title===guide.name);
+   if(existing){existing.status="published";existing.places=places.length;existing.members=4;existing.updated="刚刚更新"}
+   else{ownedGuides.unshift({id:"trip-"+Date.now(),city:guide.city.replace("市",""),title:guide.name,color:"orange",status:"pending",members:4,places:places.length,updated:"等待审核"})}
+   closeSheet();toast("已提交审核，通过后获得 30 积分")
+ }else{
+   const item=ownedGuides.find(x=>x.id===currentPublishGuideId);if(!item)return;
+   item.status="published";credits+=30;if($("#latestPointLog"))$("#latestPointLog").textContent="公开攻略审核通过 +30 分";
+   renderCredits();renderProfile("owned");closeSheet();toast("原型已模拟审核通过，获得 30 积分")
+ }
 });
 $("#loginAgreement").addEventListener("change",e=>$("#startWechatLogin").disabled=!e.target.checked);
 $("#startWechatLogin").addEventListener("click",()=>{

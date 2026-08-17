@@ -53,6 +53,9 @@ Use this section to detect stale text, then update it whenever a confirmed requi
 - Restricted third-party content must not be scraped by bypassing login, CAPTCHA, anti-bot, or access controls.
 - AA settlement is generated explicitly and becomes stale after any ledger mutation.
 - Home, Profile, and Settings use one light card system; the prototype exposes four gradient palette candidates until a final brand theme is chosen.
+- The trip workspace Itinerary List header exposes a "发布" action when the guide has at least 3 itinerary stops (or an AI-generated itinerary); otherwise the action is disabled with a hint.
+- Trip visibility states are `private` -> `reviewing` -> `published`; published requires backend/admin review.
+- A standalone prototype admin review page exists at `prototype/admin.html` and simulates the review UI only.
 
 ## Consistency Search Checklist
 

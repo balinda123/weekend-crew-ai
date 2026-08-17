@@ -115,8 +115,10 @@ warnings[]
 ## 8. 发布、隐私和安全
 
 - Crew 创建时 visibility 强制为 private；读取私密实体必须验证 owner 或 CrewMember。
-- 创建者提交发布时构建 allow-list 候选快照，只将明确勾选的地点、路线、公开备注和图片写入 PublicationSubmission。
-- reviewing 状态不写公开搜索索引；审核通过后事务生成 GuideSnapshot、切换 published、写索引并触发一次幂等积分奖励。
+- 创建者提交发布时构建 allow-list 候选快照，只将明确勾选的地点、路线、公开备注和图片写入 PublicationSubmission；提交后 visibility 进入 `reviewing`。
+- `reviewing` 表示“已提交、待运营/管理员审核”：该状态下私密协同继续可用，但不生成公开搜索索引、不写入公开广场、不允许套用。
+- 只有通过人工或运营后台审核后，才事务生成 GuideSnapshot 并将 visibility 切换为 `published`、写入公开索引并触发一次幂等积分奖励；审核拒绝或创建者撤回后恢复 `private`。
+- `prototype/admin.html` 是前端的原型模拟审核后台，仅用于交互预览，不代表真实 admin API、权限模型或运营工作流已设计完成。
 - 默认排除成员昵称/头像、账单、分摊、转账、原始截图、OCR 文本、来源链接和未授权备注。
 - 审核拒绝或创建者撤回后恢复 private；已公开快照下架并使缓存失效，但保留审核审计。
 - 保存用户图片、位置信息和模型输入的保留期限；提供创建者归档后的清理任务。

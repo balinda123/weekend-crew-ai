@@ -175,6 +175,8 @@ type ProfileTripScope = 'owned' | 'joined' | 'saved'
 - 首次登录将身份交换和资料确认拆成两步；资料确认完成后 AuthGate 才放行。后续资料更新失败不得销毁已建立会话。
 - 新建攻略成功态默认为 private；只有创建者和成员使用私密 trip API。
 - 发布确认页展示公开字段 allow-list，提交后为 reviewing；只有服务端返回 published 才在公开列表出现。
+- `TripVisibility = 'private' | 'reviewing' | 'published'`；`reviewing` 表示已提交审核、尚未生成公开快照，前端在个人列表与卡片标签中明确区分三种状态。
+- 行程工作台（ItineraryPanel）标题区新增“发布”按钮，满足 `itineraryGenerated || stops.length >= 3` 时启用，否则禁用并显示门槛提示；点击后复用 PublishGuideSheet。
 
 ## 4. 组件边界
 
@@ -200,6 +202,7 @@ type ProfileTripScope = 'owned' | 'joined' | 'saved'
 - EditableStopCard：编辑、删除和拖拽手柄。
 - StopEditorSheet：AI 节点与手动节点共用，必填 dayIndex、localStartTime 和地点；支持改到其他日期。
 - PlanningGateBar：地点门槛文案与 AI 生成按钮；门槛不得禁用手动创建入口。
+- ItineraryPanelHeader：在行程列表标签旁暴露“发布”操作，受行程节点数 ≥3（或已生成 AI 行程）控制，未满足时展示禁用态与提示文案。
 - AiPlanningProgress：轮询、取消、失败和重试。
 
 ### AA
@@ -419,3 +422,4 @@ AI 行程只有在 task 状态为 ready 且 schema 校验成功后才能写入�
 - 微信 code 换取会话、头像/昵称确认与统一 AuthGate。
 - 私密攻略查询、我创建/我加入/收藏列表、发布审核状态机。
 - 公开内容审核和搜索索引。
+- 原型另含 `prototype/admin.html`，仅作为审核后台的独立交互预览，不是生产路由或管理权限入口。
