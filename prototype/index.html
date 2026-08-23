@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#f8f9fa">
+  <title>馋猫局儿 · AI 智能旅行规划</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main class="app-shell">
+  <section class="phone">
+    <div class="status-bar"><span>09:41</span><div><i data-lucide="signal"></i><i data-lucide="wifi"></i><i data-lucide="battery-full"></i></div></div>
+
+    <div class="views">
+      <section class="view auth-view active" data-view="auth">
+        <div class="auth-content">
+          <div class="auth-brand"><span class="auth-logo"><i data-lucide="map-pinned"></i></span><strong>馋猫局儿</strong></div>
+          <div class="auth-mascots"><img src="./assets/cheese-blue-v3.jpg" alt="芝士"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖"></div>
+          <span class="kicker">先登录，再一起出发</span>
+          <h1>把想去的地方，<br>变成大家的行程</h1>
+          <p>微信快捷登录后即可创建攻略、邀请朋友和使用 AI 规划。</p>
+          <div class="auth-perks"><span><i data-lucide="sparkles"></i><b>100 基础积分</b><small>约可生成 5 次行程</small></span><span><i data-lucide="users-round"></i><b>多人共创</b><small>地点、投票实时同步</small></span></div>
+        </div>
+        <div class="auth-actions">
+          <label class="auth-agreement"><input type="checkbox" id="loginAgreement"><span>我已阅读并同意 <button type="button">用户协议</button> 和 <button type="button">隐私保护指引</button></span></label>
+          <button class="primary full wechat-login" id="startWechatLogin" disabled><i data-lucide="message-circle"></i>微信快捷登录</button>
+          <small>登录仅用于识别账户，头像和昵称由你下一步确认</small>
+        </div>
+      </section>
+
+      <section class="view" data-view="home">
+        <header class="topbar">
+          <button class="location"><i data-lucide="map-pin"></i>北京 · 朝阳区<i data-lucide="chevron-down"></i></button>
+          <div class="brand">馋猫局儿<span></span></div>
+        </header>
+        <div class="scroll home-scroll">
+          <section class="create-hero">
+            <div class="hero-copy">
+              <span class="eyebrow"><i data-lucide="sparkles"></i> 芝士 AI 旅行共创</span>
+              <h1>建一个攻略，<br>把想去的都装进来</h1>
+              <p>你和朋友先收藏地点，满 3 个就能让 AI 自动排路线。</p>
+            </div>
+            <div class="hero-mascots"><img src="./assets/cheese-blue-v3.jpg" alt="芝士"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖"></div>
+            <div class="hero-steps" aria-label="创建到 AI 规划的流程"><span><b>1</b>新建</span><i data-lucide="chevron-right"></i><span><b>2</b>收藏 3 地</span><i data-lucide="chevron-right"></i><span><b>3</b>AI 规划</span></div>
+            <button class="primary hero-create" data-sheet="createGuide"><span class="hero-create-icon"><i data-lucide="plus"></i></span><span><strong>新建旅行攻略</strong><small>30 秒开启一次共同旅行</small></span><i data-lucide="arrow-right"></i></button>
+          </section>
+
+          <section class="recent-guide">
+            <div class="section-head compact"><div><span class="kicker">正在共创</span><h2>我的进行中</h2></div><button class="text-btn" data-open-trip>继续编辑 <i data-lucide="chevron-right"></i></button></div>
+            <button class="recent-guide-card" data-open-trip>
+              <span class="recent-cover">大理</span>
+              <span><strong id="homeGuideName">大理古城和洱海慢游</strong><small><i data-lucide="map-pin"></i><b id="homePlaceCount">3</b> 个地点 · 4 位成员</small></span>
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </section>
+
+          <section class="feed">
+            <div class="section-head"><div><span class="kicker">公开行程广场</span><h2>发现真实好路线</h2></div><button class="text-btn" id="shuffle">换一批 <i data-lucide="refresh-cw"></i></button></div>
+            <button class="search feed-search" data-open-search><i data-lucide="search"></i><span>搜索目的地、路线或玩法</span><i data-lucide="chevron-right"></i></button>
+            <div class="filters"><button class="active">推荐</button><button>周末短途</button><button>吃货路线</button><button>自驾</button></div>
+            <div class="masonry" id="feedGrid"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view search-view" data-view="search">
+        <header class="search-header">
+          <button class="icon-btn" data-home><i data-lucide="chevron-left"></i></button>
+          <div class="search-input"><i data-lucide="search"></i><input id="searchInput" placeholder="搜索目的地、路线或玩法" value="大理"></div>
+          <button class="search-submit" id="searchSubmit">搜索</button>
+        </header>
+        <div class="search-summary"><span>“<b id="searchKeyword">大理</b>” 的公开行程</span><small id="searchCount">4 条结果</small></div>
+        <div class="search-results scroll"><div class="masonry" id="searchGrid"></div></div>
+      </section>
+
+      <section class="view public-trip-view" data-view="publicTrip">
+        <header class="public-header">
+          <button class="icon-btn" id="publicTripBack"><i data-lucide="chevron-left"></i></button>
+          <div class="public-header-copy"><span>公开攻略</span><strong id="publicHeaderTitle">苍山洱海 4 天慢游路线</strong></div>
+          <button class="icon-btn" id="sharePublicTrip"><i data-lucide="share-2"></i></button>
+        </header>
+        <div class="public-workspace">
+          <div class="map-canvas public-map-canvas">
+            <div class="map-grid"></div>
+            <svg viewBox="0 0 390 650" aria-label="公开行程路线"><path class="route-shadow" d="M68 90 C122 128 142 201 224 226 C302 251 216 342 302 424"/><path class="route" d="M68 90 C122 128 142 201 224 226 C302 251 216 342 302 424"/></svg>
+            <span class="pin public-route-pin pp1">1</span><span class="pin public-route-pin pp2">2</span><span class="pin public-route-pin pp3">3</span>
+            <div class="map-stat public-map-stat"><i data-lucide="route"></i><strong id="publicDistance">27 km</strong><span><b id="publicMapDays">4</b> 天公开路线</span></div>
+            <div class="map-tools public-map-tools"><button><i data-lucide="layers-3"></i></button></div>
+          </div>
+          <section class="map-drawer public-map-drawer" id="publicMapDrawer">
+            <button class="drawer-handle" id="togglePublicDrawer" aria-label="展开或收起公开攻略抽屉"><span></span><i data-lucide="chevron-up"></i></button>
+            <div class="drawer-head">
+              <nav class="drawer-tabs public-drawer-tabs">
+                <button class="active" data-public-drawer-tab="overview">地点总览 <b id="publicPlaceBadge">9</b></button>
+                <button data-public-drawer-tab="itinerary">行程列表 <b id="publicDayBadge">4天</b></button>
+              </nav>
+            </div>
+            <div class="drawer-content public-drawer-content">
+              <section class="drawer-panel active" data-public-drawer-panel="overview">
+                <div class="public-guide-summary">
+                  <span class="public-city-chip" id="publicCity">大理</span>
+                  <div><span class="public-match" id="publicMatch">AI 匹配 98%</span><h1 id="publicTitle">苍山洱海 4 天慢游路线</h1><p id="publicMeta">812 人套用 · 2684 次点赞</p></div>
+                </div>
+                <aside class="public-privacy compact"><i data-lucide="shield-check"></i><div><strong>只展示公开路线</strong><p>AA 账单、转账、同行成员和来源链接均不公开。</p></div></aside>
+                <div class="overview-stats compact"><span><strong id="publicOverviewDays">4 天</strong><small>行程时长</small></span><span><strong id="publicOverviewPlaces">9 处</strong><small>地点总数</small></span><span><strong>路线投稿者</strong><small>3 天前发布</small></span></div>
+                <div class="public-place-list" id="publicPlaceOverview"></div>
+              </section>
+              <section class="drawer-panel" data-public-drawer-panel="itinerary">
+                <div class="public-itinerary-intro"><div><span class="kicker">按日期查看</span><h3 id="publicDateRange">共 4 天行程</h3></div><small>公开只读</small></div>
+                <div id="publicTimeline"></div>
+              </section>
+            </div>
+          </section>
+        </div>
+        <div class="public-actions"><button class="secondary" id="savePublicTrip"><i data-lucide="bookmark"></i>收藏</button><button class="primary" id="copyPublicTrip"><i data-lucide="copy-plus"></i>套用为我的私密攻略</button></div>
+      </section>
+      <section class="view trip-view" data-view="trip">
+        <header class="trip-header">
+          <div class="trip-title">
+            <button class="icon-btn" data-home><i data-lucide="chevron-left"></i></button>
+            <div><h1 id="tripGuideName">大理古城和洱海慢游</h1><p id="tripMeta">9月12日 - 9月15日 · 大理市</p></div>
+            <button class="avatars" data-sheet="collab"><span class="member peach">景</span><span class="member green">豪</span><span class="member blue">乔</span><span class="member more">+1</span></button>
+          </div>
+          <nav class="trip-tabs two-tabs">
+            <button class="active" data-trip="map"><i data-lucide="map"></i>地图与行程</button>
+            <button data-trip="budget"><i data-lucide="wallet-cards"></i>AA 账本</button>
+          </nav>
+        </header>
+
+        <div class="trip-panels">
+          <section class="trip-panel map-panel active" data-panel="map">
+            <div class="map-canvas" id="mapCanvas">
+              <div class="map-grid"></div>
+              <svg viewBox="0 0 390 650" aria-label="行程路线"><path class="route-shadow" d="M76 100 C140 140 150 205 224 235 C305 268 210 360 294 430"/><path class="route" d="M76 100 C140 140 150 205 224 235 C305 268 210 360 294 430"/></svg>
+              <button class="pin p1" data-stop="0">1</button><button class="pin p2" data-stop="1">2</button><button class="pin p3" data-stop="2">3</button>
+              <div class="map-stat" id="mapStat"><i data-lucide="route"></i><strong>待规划</strong><span>已收藏 3 个地点</span></div>
+              <div class="map-tools"><button id="locateMe"><i data-lucide="locate-fixed"></i></button><button><i data-lucide="layers-3"></i></button></div>
+            </div>
+
+            <section class="map-drawer" id="mapDrawer">
+              <button class="drawer-handle" id="toggleDrawer" aria-label="展开或收起抽屉"><span></span><i data-lucide="chevron-up"></i></button>
+              <div class="drawer-head">
+                <nav class="drawer-tabs">
+                  <button class="active" data-drawer-tab="places">地点合集 <b id="placeBadge">3</b></button>
+                  <button data-drawer-tab="itinerary">行程列表 <b id="itineraryBadge">0</b></button>
+                </nav>
+                <button class="icon-btn mini" data-sheet="collab"><i data-lucide="users"></i></button>
+              </div>
+              <div class="drawer-content">
+                <section class="drawer-panel active" data-drawer-panel="places">
+                  <div class="collection-intro"><div><strong>成员共同收藏</strong><p>所有成员都可以添加、投票和评论地点</p></div><button class="small-primary" data-sheet="addPlace"><i data-lucide="plus"></i>加地点</button></div>
+                  <div class="place-list" id="placeList"></div>
+                </section>
+                <section class="drawer-panel" data-drawer-panel="itinerary">
+                  <div class="itinerary-empty" id="itineraryEmpty"><img src="./assets/cheese-blue-v3.jpg" alt="芝士"><strong>还没有生成行程</strong><p>地点满 3 个可让芝士 AI 规划；也可以先按旅行日期手动安排。</p><button class="secondary" id="startManualItinerary"><i data-lucide="calendar-plus"></i>手动创建行程</button></div>
+                  <div class="itinerary-ready" id="itineraryReady"><div class="itinerary-heading"><div><span class="kicker">按旅行日期编排</span><h3 id="tripDaySummary">共 4 天</h3></div><div class="itinerary-heading-actions"><button id="addManualStop"><i data-lucide="plus"></i>手动新增</button><button id="regenerate"><i data-lucide="refresh-cw"></i>AI 重排</button><button id="tripPublishBtn" class="publish-inline" disabled title="至少安排 3 个行程节点后可发布"><i data-lucide="send"></i>发布</button></div></div><div id="timeline"></div></div>
+                </section>
+              </div>
+              <div class="drawer-footer">
+                <div class="gate-copy"><strong id="gateTitle">已满足规划条件</strong><small id="gateHint">已添加 3 / 3 个地点</small></div>
+                <button class="primary plan-button" id="generate" disabled><i data-lucide="wand-sparkles"></i><span>AI 规划行程</span></button>
+              </div>
+            </section>
+          </section>
+
+          <section class="trip-panel budget-panel" data-panel="budget">
+            <div class="aa-stage-tabs"><button class="active" data-aa-stage="ledger">1. 记账</button><button data-aa-stage="settlement">2. 结算方案</button></div>
+            <section class="aa-stage active" data-aa-panel="ledger">
+              <div class="budget-summary"><div class="budget-top"><div><span>本次已记录</span><strong id="total">¥ 1,268.00</strong><p><b id="expenseCount">4</b> 笔账单 · 4 位参与人</p></div><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖" class="cat"></div><div class="budget-stats"><span><small>晶晶垫付</small><strong>¥516</strong></span><span><small>阿豪垫付</small><strong>¥186</strong></span><span><small>其他成员</small><strong>¥566</strong></span></div></div>
+              <div class="budget-head"><div><span class="kicker">阶段 1 · 持续记账</span><h2>费用明细</h2></div><button class="small-primary" data-sheet="expense"><i data-lucide="plus"></i>记一笔</button></div>
+              <div id="expenses"></div>
+              <aside class="aa-tip"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖"><div><strong>账单确认后再结算</strong><p>生成结算不会锁定账本；新增或修改账单后，旧方案会自动失效。</p></div></aside>
+              <button class="primary full settlement-trigger" id="generateSettlement"><i data-lucide="calculator"></i>生成最少转账方案</button>
+            </section>
+            <section class="aa-stage" data-aa-panel="settlement">
+              <div class="settlement-placeholder" id="settlementPlaceholder"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖"><h2>还没有结算方案</h2><p>请先核对账单，再点击“生成最少转账方案”。</p><button class="secondary full" data-aa-back>返回费用明细</button></div>
+              <section class="settlement" id="settlementResult">
+                <div class="settle-title"><img src="./assets/milksugar-blue-v3.jpg" alt="奶糖"><div><span>奶糖精算完成</span><h3>2 笔转账即可结清</h3><small id="settlementVersion">基于 4 笔账单生成</small></div><i data-lucide="badge-check"></i></div>
+                <div class="balance-strip"><span><small>应收</small><strong>¥242.50</strong></span><span><small>应付</small><strong>¥242.50</strong></span><span><small>差额</small><strong>¥0.00</strong></span></div>
+                <div id="transfers"></div>
+                <button class="secondary full" id="copy"><i data-lucide="copy"></i>复制结算结果</button>
+                <button class="text-wide" id="redoSettlement"><i data-lucide="refresh-cw"></i>账单有变化，重新生成</button>
+              </section>
+            </section>
+          </section>
+        </div>
+      </section>
+
+      <section class="view profile-view" data-view="profile">
+        <header class="profile-header">
+          <div class="profile-top profile-summary-card">
+            <button class="profile-avatar" data-sheet="wechatLogin" aria-label="同步微信头像"><span id="profileAvatarText">静</span><i data-lucide="plus"></i></button>
+            <div class="profile-identity"><span id="profileLevel">旅行策划师 Lv.2</span><h1 id="profileName">晶晶的旅行宇宙</h1><button class="profile-login-link" data-sheet="wechatLogin" id="profileLoginLink">微信资料已同步 <i data-lucide="badge-check"></i></button></div>
+            <button class="icon-btn" data-settings aria-label="设置"><i data-lucide="settings"></i></button>
+            <button class="profile-credit-inline" data-settings>
+              <span><small><i data-lucide="sparkles"></i>旅行积分</small><strong id="creditBalance">100</strong></span>
+              <span><small>可生成</small><strong><b id="creditRuns">5</b> 次</strong></span>
+              <span><small>本月 AI</small><strong><b id="aiUseCount">0</b> / 5</strong></span>
+              <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+          <div class="profile-stats"><span><strong>5</strong><small>我创建的</small></span><span><strong>3</strong><small>我加入的</small></span><span><strong>143</strong><small>获赞</small></span></div>
+        </header>
+        <div class="profile-tabs"><button class="active" data-profile="owned">我创建的</button><button data-profile="joined">我加入的</button><button data-profile="saved">收藏</button></div>
+        <div class="profile-content" id="profileList"></div>
+      </section>
+
+      <section class="view settings-view" data-view="settings">
+        <header class="simple-header"><button class="icon-btn" data-profile-back><i data-lucide="chevron-left"></i></button><h1>设置</h1><span></span></header>
+        <div class="settings-scroll scroll">
+          <section class="settings-credit">
+            <div class="settings-credit-head"><span class="credit-cat"><img src="./assets/cheese-blue-v3.jpg" alt="芝士"></span><div><span>我的旅行积分</span><strong><b id="creditBalanceSettings">100</b> 分</strong><small>每一分都对应真实 AI 成本</small></div></div>
+            <div class="quota-row"><span><small>本月 AI 规划</small><strong><b id="monthUseSettings">0</b> / 5 次</strong></span><span><small>今日安全限频</small><strong><b id="todayUseSettings">0</b> / 3 次</strong></span></div>
+            <div class="quota-track"><span id="quotaTrack"></span></div>
+          </section>
+          <section class="theme-settings">
+            <div class="settings-section-title"><div><span class="kicker">外观配色</span><h2>选一套喜欢的活泼色</h2></div><i data-lucide="palette"></i></div>
+            <div class="theme-options">
+              <button class="active" data-theme-choice="sunny"><span class="theme-swatch sunny"></span><b>日光橘</b><small>橘黄 × 湖蓝</small><i data-lucide="check"></i></button>
+              <button data-theme-choice="coral"><span class="theme-swatch coral"></span><b>珊瑚汽水</b><small>珊瑚 × 天蓝</small><i data-lucide="check"></i></button>
+              <button data-theme-choice="mint"><span class="theme-swatch mint"></span><b>青柚森林</b><small>青绿 × 柠黄</small><i data-lucide="check"></i></button>
+              <button data-theme-choice="berry"><span class="theme-swatch berry"></span><b>莓果晴空</b><small>莓粉 × 晴紫</small><i data-lucide="check"></i></button>
+            </div>
+            <p class="theme-note">当前仅用于比较原型方向，选定后再固化为正式品牌色。</p>
+          </section>
+          <section class="points-rules">
+            <div class="settings-section-title"><div><span class="kicker">积分规则</span><h2>透明使用，不怕突然用完</h2></div><i data-lucide="badge-info"></i></div>
+            <div class="rule-grid">
+              <span><i data-lucide="gift"></i><b>+100</b><small>新用户基础积分</small></span>
+              <span><i data-lucide="route"></i><b>-20</b><small>生成一次 AI 行程</small></span>
+              <span><i data-lucide="scan-search"></i><b>-5</b><small>解析一条分享链接</small></span>
+              <span><i data-lucide="send"></i><b>+30</b><small>公开攻略审核通过</small></span>
+            </div>
+            <p class="rule-note">公开奖励每月最多 3 次；删除公开内容或审核不通过不发放，防止刷分。</p>
+          </section>
+          <section class="settings-group">
+            <h2>AI 与内容</h2>
+            <button><span class="setting-icon coral"><i data-lucide="history"></i></span><span><strong>积分明细</strong><small id="latestPointLog">新用户基础积分 +100</small></span><i data-lucide="chevron-right"></i></button>
+            <button><span class="setting-icon blue"><i data-lucide="link-2"></i></span><span><strong>链接解析与授权</strong><small>管理已提交的公开分享链接</small></span><i data-lucide="chevron-right"></i></button>
+            <button><span class="setting-icon green"><i data-lucide="shield-check"></i></span><span><strong>公开内容与隐私</strong><small>发布前逐项确认公开字段</small></span><i data-lucide="chevron-right"></i></button>
+          </section>
+          <section class="settings-group">
+            <h2>通用</h2>
+            <label class="setting-toggle"><span class="setting-icon yellow"><i data-lucide="bell"></i></span><span><strong>行程提醒</strong><small>出发、预订和成员变更</small></span><input type="checkbox" checked><b></b></label>
+            <label class="setting-toggle"><span class="setting-icon mint"><i data-lucide="message-circle"></i></span><span><strong>协同消息</strong><small>评论、投票和账单通知</small></span><input type="checkbox" checked><b></b></label>
+            <button><span class="setting-icon lilac"><i data-lucide="download"></i></span><span><strong>离线地图与存储</strong><small>已使用 128 MB</small></span><i data-lucide="chevron-right"></i></button>
+          </section>
+          <section class="settings-group">
+            <button id="resetLogin"><span class="setting-icon blue"><i data-lucide="log-out"></i></span><span><strong>重新体验首次登录</strong><small>仅用于原型演示，不会清除行程</small></span><i data-lucide="chevron-right"></i></button>
+            <button><span class="setting-icon coral"><i data-lucide="circle-help"></i></span><span><strong>帮助与反馈</strong><small>版本 0.4 Prototype</small></span><i data-lucide="chevron-right"></i></button>
+          </section>
+        </div>
+      </section>    </div>
+
+    <nav class="bottom-nav hidden"><button class="active" data-nav="home"><i data-lucide="house"></i><span>首页</span></button><button data-nav="profile"><i data-lucide="user-round"></i><span>我的</span></button></nav>
+  </section>
+</main>
+
+<div class="loading" id="loading"><div class="loading-card"><button id="cancel"><i data-lucide="x"></i></button><div class="orbit"><span></span><img src="./assets/cheese-blue-v3.jpg" alt="芝士"></div><span class="eyebrow"><i data-lucide="sparkles"></i> 芝士正在规划</span><h2>正在组合大家收藏的地点...</h2><p id="loadingText">检查营业时间与地点距离</p><div class="loading-track"><span id="loadingBar"></span></div><small id="loadingPct">18%</small></div></div>
+
+<div class="sheet-overlay" id="sheetOverlay">
+  <section class="sheet create-sheet" id="createGuide">
+    <div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button>
+    <span class="kicker">创建新的共同攻略</span><h2>这次旅行叫什么？</h2>
+    <form id="createGuideForm">
+      <label><span>自定义攻略名称</span><input id="guideNameInput" value="大理古城和洱海慢游" maxlength="24" required></label>
+      <label><span>热门目的地</span><div class="hot-destinations"><button type="button" class="active" data-hot="云南|大理市|大理镇">大理</button><button type="button" data-hot="四川省|成都市|锦江区">成都</button><button type="button" data-hot="福建省|泉州市|鲤城区">泉州</button><button type="button" data-hot="新疆维吾尔自治区|阿勒泰地区|布尔津县">阿勒泰</button></div></label>
+      <label><span>全国地区选择</span><div class="region-picker"><select id="provincePicker"></select><select id="cityPicker"></select><select id="districtPicker"></select></div></label>
+      <div class="form-row"><label><span>出发日期</span><input id="startDate" type="date" value="2026-09-12"></label><label><span>返程日期</span><input id="endDate" type="date" value="2026-09-15"></label></div>
+      <button class="primary full" type="submit"><i data-lucide="plus"></i>创建并开始收藏地点</button>
+    </form>
+  </section>
+
+  <section class="sheet" id="collab"><div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button><span class="kicker">实时协同</span><h2>4 位朋友正在共创</h2><div class="collab-list"><span><b class="member peach">景</b><strong>晶晶</strong><small>刚刚收藏了大理古城</small></span><span><b class="member green">豪</b><strong>阿豪</strong><small>正在浏览地点合集</small></span><span><b class="member blue">乔</b><strong>小乔</strong><small>投票想去段公子</small></span></div><button class="primary full" id="invite"><i data-lucide="user-plus"></i>邀请微信好友</button></section>
+
+  <section class="sheet place-hub-sheet" id="addPlace">
+    <div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button>
+    <div class="place-sheet-title"><button class="place-city"><i data-lucide="map-pin"></i>大理市<i data-lucide="chevron-down"></i></button><h2>添加地点</h2></div>
+    <nav class="place-method-tabs">
+      <button class="active" data-place-mode="search"><i data-lucide="search"></i><span>搜索地点</span></button>
+      <button data-place-mode="link"><i data-lucide="scan-search"></i><span>链接识别</span><small>-5分</small></button>
+
+    </nav>
+    <div class="place-mode-panel active" data-place-mode-panel="search">
+      <form class="place-search prominent" id="placeSearchForm"><i data-lucide="search"></i><input id="placeSearchInput" placeholder="搜索店名、景点或地址"><button>搜索</button></form>
+      <div class="recent-searches"><div class="subhead"><strong>最近搜索</strong><button id="clearRecent">清空</button></div><div id="recentSearchList"><button data-recent="烧烤"><i data-lucide="history"></i>烧烤</button><button data-recent="古城咖啡"><i data-lucide="history"></i>古城咖啡</button><button data-recent="日落码头"><i data-lucide="history"></i>日落码头</button></div></div>
+      <div class="candidate-title"><strong>附近推荐</strong><small>点击后编辑确认</small></div>
+      <div class="place-candidates" id="placeCandidates"></div>
+    </div>
+    <div class="place-mode-panel" data-place-mode-panel="link">
+      <div class="link-import-intro"><span><i data-lucide="link-2"></i></span><div><strong>粘贴小红书或抖音分享链接</strong><p>芝士会提取可能的店名、景点和备注，再通过地图 POI 校验。</p></div></div>
+      <textarea id="shareLinkInput" class="share-link-input" placeholder="粘贴分享链接或带链接的分享口令&#10;例如：https://v.douyin.com/..."></textarea>
+      <div class="link-cost"><span><i data-lucide="coins"></i>本次识别消耗 5 积分</span><b>余额 <em id="linkCreditBalance">100</em></b></div>
+      <button class="primary full" id="parseShareLink"><i data-lucide="wand-sparkles"></i>识别链接中的旅游地点</button>
+      <aside class="compliance-note"><i data-lucide="shield-check"></i><span>仅处理你主动提交的公开分享信息；平台限制访问时可改用截图或复制文字，不绕过登录与访问限制。</span></aside>
+      <section class="import-results" id="importResults">
+        <div class="import-result-head"><div><span class="kicker">识别完成 · 4 个候选</span><h3>选择要导入的地点</h3></div><button id="toggleImportAll">全选</button></div>
+        <div id="extractedPlaces"></div>
+        <button class="primary full" id="batchImportPlaces"><i data-lucide="list-plus"></i>导入已选地点 <b id="selectedImportCount">4</b></button>
+      </section>
+    </div>
+
+  </section>
+
+  <section class="sheet login-sheet" id="wechatLogin">
+    <div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button>
+    <span class="kicker">微信快捷登录</span><h2>用熟悉的名字一起旅行</h2>
+    <div class="login-visual"><span class="login-avatar-preview" id="loginAvatarPreview">静</span><div><strong>两步完成</strong><p>建立微信身份后，由你确认头像和昵称；行程成员更容易认出你。</p></div></div>
+    <form id="wechatLoginForm">
+      <label><span>微信头像</span><button class="choose-avatar" type="button" id="chooseWechatAvatar"><span id="chosenAvatarText">静</span><b><i data-lucide="camera"></i>选择头像</b></button></label>
+      <label><span>微信昵称</span><input id="wechatNickname" value="小静" maxlength="16" required></label>
+      <aside class="login-privacy"><i data-lucide="shield-check"></i><span>仅保存你确认后的头像与昵称；确认后才会进入小程序；资料可在「我的」中更新。</span></aside>
+      <button class="primary full" type="submit"><i data-lucide="message-circle"></i>同意并快速登录</button>
+    </form>
+  </section>
+
+  <section class="sheet publish-sheet" id="publishGuide">
+    <div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button>
+    <span class="kicker">从私密共创到公开分享</span><h2>发布这篇旅行攻略？</h2>
+    <div class="publish-preview"><span class="profile-item-cover orange">成都</span><div><strong id="publishGuideTitle">成都朋友的吃货周末</strong><p>当前仅你和受邀成员可见</p></div></div>
+    <div class="publish-checks"><span><i data-lucide="eye"></i><b>公开内容</b><small>标题、地点、路线和你勾选的图片</small></span><span><i data-lucide="lock-keyhole"></i><b>始终私密</b><small>成员、评论、来源链接和私人备注</small></span></div><aside class="publish-warning"><i data-lucide="wallet-cards"></i><div><strong>AA 账单与转账关系永不公开</strong><p>发布前后均不会出现在公开攻略或被套用的副本中。</p></div></aside>
+    <label class="publish-consent"><input type="checkbox" id="publishConsent"><span>我已确认公开内容，不包含同行人隐私</span></label>
+    <button class="primary full" id="confirmPublish" disabled><i data-lucide="send"></i>提交审核并发布</button>
+  </section>
+
+  <section class="sheet place-editor-sheet" id="placeEditor">
+    <div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button>
+    <span class="kicker">添加前确认</span><h2>编辑地点信息</h2>
+    <form id="placeEditorForm">
+      <label><span>地点名称</span><input id="placeEditorName" required></label>
+      <label><span>地点类型</span><div class="place-type-chips"><button type="button" class="active" data-place-type="游">游玩</button><button type="button" data-place-type="吃">餐饮</button><button type="button" data-place-type="住">住宿</button><button type="button" data-place-type="购">购物</button></div></label>
+      <label><span>地图地址</span><div class="verified-input"><i data-lucide="badge-check"></i><input id="placeEditorAddress" required><b>POI 已匹配</b></div></label>
+      <label><span>备注</span><textarea id="placeEditorNote" placeholder="推荐菜、最佳时间、预订提示等"></textarea></label>
+      <label><span>来源链接（选填）</span><input id="placeEditorSource" placeholder="保留溯源，不会公开展示"></label>
+      <button class="add-photo" type="button"><i data-lucide="image-plus"></i><span>添加图片或截图</span></button>
+      <button class="primary full" type="submit"><i data-lucide="plus"></i>添加到地点合集</button>
+    </form>
+  </section>
+  <section class="sheet" id="editStop"><div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button><span class="kicker" id="editStopKicker">编辑行程节点</span><h2 id="editStopTitle">调整日期和停留信息</h2><form id="editStopForm"><input type="hidden" id="editStopIndex"><div class="form-row"><label><span>所属日期</span><select id="editStopDay"></select></label><label><span>开始时间</span><input id="editStopTime" type="time"></label></div><label><span>建议时长</span><select id="editStopDuration"><option>1 小时</option><option selected>1.5 小时</option><option>2.5 小时</option><option>半天</option></select></label><label><span>地点名称</span><input id="editStopName" required></label><label><span>备注</span><input id="editStopDesc"></label><button class="primary full" type="submit" id="saveStopButton">保存节点修改</button></form></section>
+
+  <section class="sheet" id="expense"><div class="handle"></div><button class="sheet-close"><i data-lucide="x"></i></button><span class="kicker">智能记账</span><h2>记一笔 AA 消费</h2><form id="expenseForm"><label><span>消费名称</span><input id="expenseName" value="才村咖啡" required></label><label><span>金额</span><div class="money"><b>¥</b><input id="expenseAmount" type="number" value="128" min=".01" step=".01" required></div></label><div class="form-row"><label><span>付款人</span><select id="expensePayer"><option>晶晶</option><option>阿豪</option><option>小乔</option><option>林一</option></select></label><label><span>分摊方式</span><select><option>4人均分</option><option>指定参与人</option><option>按份额</option></select></label></div><button class="receipt" type="button" id="scan"><i data-lucide="scan-line"></i><span><strong>拍照识别小票</strong><small>奶糖会自动提取金额和商户</small></span></button><button class="primary full">保存账单</button></form></section>
+</div>
+
+<div class="toast" id="toast"><i data-lucide="circle-check"></i><span>已完成</span></div>
+<script src="./app.js"></script>
+</body>
+</html>

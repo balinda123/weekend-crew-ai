@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>馋猫局儿 · 内容审核后台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{--orange:#ff643d;--orange-soft:#fff0e9;--green:#168b68;--green-soft:#e9f8f2;--red:#d93a3a;--red-soft:#fdecec;--ink:#17212b;--muted:#6c7887;--line:#e4e8eb;--bg:#f7f8f8;--surface:#fff}
+    *{box-sizing:border-box}body{margin:0;font-family:"Noto Sans SC",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+    .wrap{max-width:980px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    h1{font-size:22px;margin:0}h1 span{color:var(--orange)}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px}
+    .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+    .stat-card strong{display:block;font-size:26px;margin-bottom:4px}
+    .stat-card small{color:var(--muted);font-size:12px}
+    .toolbar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .toolbar button,.toolbar select{height:38px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13px}
+    .toolbar button.active{background:var(--orange);color:#fff;border-color:var(--orange)}
+    .review-list{display:grid;gap:12px}
+    .review-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;display:grid;gap:12px}
+    .review-head{display:flex;align-items:flex-start;gap:12px}
+    .cover{width:64px;height:64px;border-radius:14px;display:grid;place-items:center;color:#fff;font-size:20px;font-weight:800;background:linear-gradient(145deg,#ff643d,#ff914d)}
+    .cover.blue{background:linear-gradient(145deg,#248fb4,#57b5cf)}
+    .cover.green{background:linear-gradient(145deg,#168b68,#48bd91)}
+    .meta{flex:1}.meta h3{font-size:15px;margin:0 0 4px}.meta p{font-size:12px;color:var(--muted);margin:0 0 6px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap}.tags span{font-size:10px;padding:4px 8px;border-radius:6px;background:#f0f2f3;color:var(--muted)}
+    .tags .status-pending{background:#fff0e0;color:#b45b00}.tags .status-passed{background:var(--green-soft);color:var(--green)}.tags .status-rejected{background:var(--red-soft);color:var(--red)}
+    .review-body{font-size:12px;line-height:1.7;color:var(--muted);background:#f8f9fa;border-radius:12px;padding:12px}
+    .review-body b{color:var(--ink)}
+    .review-actions{display:flex;gap:10px;justify-content:flex-end}
+    .review-actions button{height:36px;padding:0 16px;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:5px}
+    .btn-pass{background:var(--green);color:#fff}.btn-reject{background:var(--red-soft);color:var(--red);border:1px solid #f5c2c2}
+    .empty{text-align:center;padding:60px 20px;color:var(--muted)}.empty svg{width:48px;height:48px;color:var(--orange);margin-bottom:12px}
+    .log{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#17212b;color:#fff;padding:10px 18px;border-radius:12px;font-size:13px;display:none;gap:6px;align-items:center}
+    .log.visible{display:flex}
+    @media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.wrap{padding:16px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>馋猫局儿 <span>内容审核后台</span></h1>
+        <p class="text-sm text-gray-500 mt-1">模拟后台：公开攻略人工复审 + 自动合规抽检</p>
+      </div>
+      <button class="text-sm text-orange-500 font-semibold flex items-center gap-1" onclick="location.href='./index.html'"><i data-lucide="arrow-left"></i>返回小程序原型</button>
+    </header>
+
+    <section class="stats">
+      <div class="stat-card"><strong id="statPending">2</strong><small>待审核</small></div>
+      <div class="stat-card"><strong id="statToday">4</strong><small>今日已审</small></div>
+      <div class="stat-card"><strong id="statPassRate">75%</strong><small>近 7 天通过率</small></div>
+      <div class="stat-card"><strong id="statAutoFlag">1</strong><small>机审疑似违规</small></div>
+    </section>
+
+    <div class="toolbar">
+      <button class="active" data-filter="all">全部</button>
+      <button data-filter="pending">待审核</button>
+      <button data-filter="passed">已通过</button>
+      <button data-filter="rejected">已驳回</button>
+      <select id="sortBy">
+        <option value="newest">最新提交优先</option>
+        <option value="oldest">最早提交优先</option>
+      </select>
+    </div>
+
+    <div class="review-list" id="reviewList"></div>
+  </div>
+
+  <div class="log" id="toast"><i data-lucide="circle-check"></i><span>操作已记录</span></div>
+
+  <script>
+    const $=s=>document.querySelector(s);
+    const $$=s=>[...document.querySelectorAll(s)];
+    let filter='all';
+    let reviews=[
+      {id:1,city:'成都',title:'成都朋友的吃货周末',places:6,members:5,status:'pending',submitter:'小静',time:'10 分钟前',autoFlags:['地点可验证','无敏感词'],risk:'low',note:''},
+      {id:2,city:'大理',title:'苍山洱海 4 天慢游路线',places:9,members:4,status:'pending',submitter:'晶晶',time:'2 小时前',autoFlags:['地点可验证','含外部链接'],risk:'low',note:''},
+      {id:3,city:'泉州',title:'泉州簪花与古城散步',places:4,members:3,status:'passed',submitter:'阿豪',time:'昨天',autoFlags:['通过机审'],risk:'none',note:'已奖励 30 积分'},
+      {id:4,city:'长沙',title:'24 小时夜宵特种兵',places:6,members:4,status:'rejected',submitter:'路人甲',time:'昨天',autoFlags:['标题夸张'],risk:'medium',note:'驳回原因：标题易引发焦虑，建议修改后重提'}
+    ];
+
+    function toast(msg){const t=$('#toast');t.querySelector('span').textContent=msg;t.classList.add('visible');setTimeout(()=>t.classList.remove('visible'),1800)}
+    function render(){
+      const list=reviews.filter(r=>filter==='all'||r.status===filter);
+      $('#reviewList').innerHTML=list.length?list.map(r=>`
+        <article class="review-card" data-id="${r.id}">
+          <div class="review-head">
+            <span class="cover ${r.city==='大理'?'blue':r.city==='泉州'?'green':''}">${r.city}</span>
+            <div class="meta">
+              <h3>${r.title}</h3>
+              <p>${r.places} 个地点 · ${r.members} 位成员 · 提交者 ${r.submitter} · ${r.time}</p>
+              <div class="tags">
+                <span class="status-${r.status}">${{pending:'待审核',passed:'已通过',rejected:'已驳回'}[r.status]}</span>
+                ${r.autoFlags.map(f=>'<span>'+f+'</span>').join('')}
+                ${r.risk!=='none'?'<span>风险：'+r.risk+'</span>':''}
+              </div>
+            </div>
+          </div>
+          ${r.note?'<div class="review-body"><b>审核备注：</b>'+r.note+'</div>':''}
+          <div class="review-actions">
+            ${r.status==='pending'?`<button class="btn-reject" onclick="setStatus(${r.id},'rejected')"><i data-lucide="x"></i>驳回</button><button class="btn-pass" onclick="setStatus(${r.id},'passed')"><i data-lucide="check"></i>通过</button>`:`<span class="text-xs text-gray-400">已处理</span>`}
+          </div>
+        </article>
+      `).join(''):'<div class="empty"><i data-lucide="inbox"></i><strong>该筛选条件下没有记录</strong><p>切换标签或等待新提交</p></div>';
+      updateStats();window.lucide?.createIcons();
+    }
+    function updateStats(){
+      $('#statPending').textContent=reviews.filter(r=>r.status==='pending').length;
+      $('#statToday').textContent=reviews.filter(r=>r.status!=='pending').length;
+      const passed=reviews.filter(r=>r.status==='passed').length,total=reviews.filter(r=>r.status!=='pending').length;
+      $('#statPassRate').textContent=total?Math.round(passed/total*100)+'%':'-';
+      $('#statAutoFlag').textContent=reviews.filter(r=>r.risk!=='none'&&r.status==='pending').length;
+    }
+    function setStatus(id,status){
+      const r=reviews.find(x=>x.id===id);if(!r)return;
+      r.status=status;
+      r.note=status==='passed'?'已通过公开审核，用户获得 30 旅行积分':'驳回原因：内容需补充地点来源或调整标题';
+      toast(status==='passed'?'已通过并发放积分':'已驳回并通知提交者');
+      render();
+    }
+    $$('[data-filter]').forEach(b=>b.addEventListener('click',()=>{
+      $$('[data-filter]').forEach(x=>x.classList.toggle('active',x===b));
+      filter=b.dataset.filter;render();
+    }));
+    $('#sortBy').addEventListener('change',()=>{reviews.reverse();render();});
+    render();
+  </script>
+</body>
+</html>
